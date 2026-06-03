@@ -1,27 +1,24 @@
-# dependencies — ignore ALL node_modules folders
+# dependencies
 node_modules/
-**/node_modules/
 
-# next.js build
+# next.js
 .next/
-**/.next/
 out/
-**/out/
 
-# env (keep example only)
+# env (commit .env.example only)
 .env
 .env.local
 .env*.local
-!frontend/.env.example
+!.env.example
 
 # misc
 .DS_Store
 *.pem
 npm-debug.log*
 .pnpm-debug.log*
-**/.vercel
+.vercel
 *.tsbuildinfo
-**/next-env.d.ts
+next-env.d.ts
 
 # yarn
 .pnp

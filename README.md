@@ -1,29 +1,29 @@
-# Team14 – Mental Health (MindWell)
+# Team14 – MindWell (Frontend)
 
-**Module:** CT071-3-3-DDAC · **GitHub:** [Team14_Mental_Health](https://github.com/PandeyKiran7/Team14_Mental_Health)
+**Module:** CT071-3-3-DDAC  
+**GitHub:** [Team14_Mental_Health](https://github.com/PandeyKiran7/Team14_Mental_Health)
 
 ## Project layout
 
 ```text
 team14-mental_health/
-├── frontend/     ← Next.js + TypeScript (all UI work here)
-├── backend/      ← API + database 
-└── README.md
+├── src/
+│   ├── app/              ← pages (public, auth, patient, doctor, admin)
+│   ├── components/
+│   ├── helper/           ← apiList.ts + apiService.ts
+│   └── constants/
+├── public/
+├── .env.local           
+└── package.json
 ```
 
-## Run the app (from project root)
+## Run
 
 ```bash
 npm install
-cd frontend && npm install && cd ..
+copy .env.example .env.local
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
 
- `frontend/` only:
-
-```bash
-cd frontend
-npm run dev
-```

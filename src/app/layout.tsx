@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MindWell | Team 14 Mental Health",
-  description: "Mental health and wellness platform - CT071-3-3-DDAC",
+  title: "Diabetes Management System | Team 14",
+  description:
+    "Track blood glucose, manage medications, book appointments, and access diabetes health resources - CT071-3-3-DDAC",
 };
 
 export default function RootLayout({
