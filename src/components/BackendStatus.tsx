@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { apiGetCall } from "@/helper/apiService";
 import { API_CONSTANTS } from "@/constants/staticConstant";
+import { API_BASE_URL } from "@/helper/apiList";
 
 export default function BackendStatus() {
   const [message, setMessage] = useState<string | null>(null);
@@ -15,14 +16,14 @@ export default function BackendStatus() {
       const response = await apiGetCall({ endpoint: "health" });
 
       if (response?.status === API_CONSTANTS.success) {
-        const data = response.data as { status: string; service: string };
-        setMessage(`Connected: ${data.service} (${data.status})`);
+        const data = response.data as { message?: string };
+        setMessage(`Connected (via proxy → localhost:4000) — ${data.message ?? "OK"}`);
       } else {
         setMessage("Backend returned an error. Check terminal logs.");
       }
     } catch {
       setMessage(
-        "Cannot reach backend. Run: cd backend → npm run dev (port 4000)",
+        `Cannot reach backend at ${API_BASE_URL}. Start it with: cd Diabetes_Health_Application_Group14 → npm run dev`,
       );
     } finally {
       setLoading(false);
@@ -31,9 +32,9 @@ export default function BackendStatus() {
 
   return (
     <div className="mt-8 rounded-xl border border-teal-200 bg-teal-50 p-6">
-      <h2 className="font-semibold text-teal-800">API test (Style B)</h2>
+      <h2 className="font-semibold text-teal-800">Backend connection test</h2>
       <p className="mt-1 text-sm text-zinc-600">
-        Uses <code className="rounded bg-white px-1">apiGetCall(&#123; endpoint: &quot;health&quot; &#125;)</code>
+        API base: <code className="rounded bg-white px-1">{API_BASE_URL || "same origin (proxy → :4000)"}</code>
       </p>
       <button
         type="button"

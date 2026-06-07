@@ -62,8 +62,6 @@ const values = [
 ];
 
 export default function AboutPage() {
-  const content = aboutContent;
-
   return (
     <section className="mx-auto max-w-6xl px-4 py-16">
 

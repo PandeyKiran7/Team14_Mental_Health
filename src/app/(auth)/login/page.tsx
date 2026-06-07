@@ -1,20 +1,113 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { apiPostCall } from "@/helper/apiService";
+import { API_CONSTANTS } from "@/constants/staticConstant";
+
+type LoginUser = {
+  userId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  password?: string;
+};
+
+type LoginResponse = {
+  success: boolean;
+  data?: {
+    accessToken: string;
+    user: LoginUser;
+  };
+  message?: string;
+};
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const response = await apiPostCall({
+        endpoint: "login",
+        email,
+        password,
+      });
+
+      if (response.status !== API_CONSTANTS.success) {
+        const errData = response.data as { message?: string };
+        setError(errData?.message ?? "Login failed. Check your credentials.");
+        return;
+      }
+
+      const body = response.data as LoginResponse;
+      if (!body.success || !body.data?.accessToken) {
+        setError(body.message ?? "Login failed.");
+        return;
+      }
+
+      localStorage.setItem("accessToken", body.data.accessToken);
+      const { password: _, ...safeUser } = body.data.user;
+      localStorage.setItem("user", JSON.stringify(safeUser));
+
+      const role = body.data.user.role?.toLowerCase();
+      if (role === "patient") router.push("/patient/dashboard");
+      else if (role === "doctor") router.push("/doctor/dashboard");
+      else if (role === "admin") router.push("/admin/dashboard");
+      else router.push("/");
+    } catch {
+      setError("Cannot reach backend. Start it on port 4000, then restart the frontend.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <>
       <h1 className="text-2xl font-bold text-teal-800">Login</h1>
-      <form className="mt-6 space-y-4">
-        <input type="email" placeholder="Email" className="w-full rounded-lg border px-3 py-2" />
-        <input type="password" placeholder="Password" className="w-full rounded-lg border px-3 py-2" />
-        <button type="button" className="w-full rounded-lg bg-teal-600 py-2 text-white">
-          Login (coming soon)
+      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full rounded-lg border px-3 py-2"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="w-full rounded-lg border px-3 py-2"
+        />
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-lg bg-teal-600 py-2 text-white disabled:opacity-50"
+        >
+          {loading ? "Logging in…" : "Login"}
         </button>
       </form>
       <p className="mt-4 text-center text-sm">
-        <Link href="/forgot-password" className="text-teal-600 hover:underline">Forgot password?</Link>
+        <Link href="/forgot-password" className="text-teal-600 hover:underline">
+          Forgot password?
+        </Link>
         {" · "}
-        <Link href="/register" className="text-teal-600 hover:underline">Register</Link>
+        <Link href="/register" className="text-teal-600 hover:underline">
+          Register
+        </Link>
       </p>
     </>
   );
