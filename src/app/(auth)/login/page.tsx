@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { apiPostCall } from "@/helper/apiService";
+import FormButton from "@/components/formElements/FormButton";
+import FormInput from "@/components/formElements/FormInput";
+import FormPassword from "@/components/formElements/FormPassword";
 import { API_CONSTANTS } from "@/constants/staticConstant";
+import { apiPostCall } from "@/helper/apiService";
 
 type LoginUser = {
   userId: number;
@@ -74,32 +77,36 @@ export default function LoginPage() {
   return (
     <>
       <h1 className="text-2xl font-bold text-teal-800">Login</h1>
+
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-        <input
+        <FormInput
+          name="email"
           type="email"
-          placeholder="Email"
+          label="Email"
+          placeholder="you@example.com"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full rounded-lg border px-3 py-2"
         />
-        <input
-          type="password"
+
+        <FormPassword
+          name="password"
+          label="Password"
           placeholder="Password"
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full rounded-lg border px-3 py-2"
         />
+
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-teal-600 py-2 text-white disabled:opacity-50"
-        >
+
+        <FormButton type="submit" disabled={loading}>
           {loading ? "Logging in…" : "Login"}
-        </button>
+        </FormButton>
       </form>
+
       <p className="mt-4 text-center text-sm">
         <Link href="/forgot-password" className="text-teal-600 hover:underline">
           Forgot password?
