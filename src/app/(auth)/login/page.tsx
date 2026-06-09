@@ -46,6 +46,9 @@ export default function LoginPage() {
         password,
       });
 
+
+      console.log("Login response:", response);
+
       if (response.status !== API_CONSTANTS.success) {
         const errData = response.data as { message?: string };
         setError(errData?.message ?? "Login failed. Check your credentials.");
