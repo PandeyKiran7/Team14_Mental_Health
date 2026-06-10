@@ -8,6 +8,9 @@ import FormInput from "@/components/formElements/FormInput";
 import FormPassword from "@/components/formElements/FormPassword";
 import { API_CONSTANTS } from "@/constants/staticConstant";
 import { apiPostCall } from "@/helper/apiService";
+import { setAccessToken, setStoredUser } from "@/lib/auth";
+import { doctorHasProfile, getDoctorHomePath } from "@/lib/doctorProfile";
+import { getPatientHomePath, patientHasProfile } from "@/lib/patientProfile";
 
 type LoginUser = {
   userId: number;
@@ -61,15 +64,22 @@ export default function LoginPage() {
         return;
       }
 
-      localStorage.setItem("accessToken", body.data.accessToken);
+      setAccessToken(body.data.accessToken);
       const { password: _, ...safeUser } = body.data.user;
-      localStorage.setItem("user", JSON.stringify(safeUser));
+      setStoredUser(safeUser);
 
       const role = body.data.user.role?.toLowerCase();
-      if (role === "patient") router.push("/patient/dashboard");
-      else if (role === "doctor") router.push("/doctor/dashboard");
-      else if (role === "admin") router.push("/admin/dashboard");
-      else router.push("/");
+      if (role === "patient") {
+        const hasProfile = await patientHasProfile(body.data.accessToken);
+        router.push(getPatientHomePath(hasProfile));
+      } else if (role === "doctor") {
+        const hasProfile = await doctorHasProfile(body.data.accessToken);
+        router.push(getDoctorHomePath(hasProfile));
+      } else if (role === "admin") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/");
+      }
     } catch {
       setError("Cannot reach backend. Start it on port 4000, then restart the frontend.");
     } finally {

@@ -3,7 +3,7 @@ export const homeContent = {
     title: "Diabetes Management System",
     tagline: "Monitor • Manage • Improve Health",
     description:
-      "Track blood glucose, book appointments, and access health resources—all in one secure cloud platform.",
+      "Track glucose levels, book doctor appointments, receive prescriptions, and manage diabetes care—all in one secure platform built by Team 14.",
     getStartedHref: "/register",
     loginHref: "/login",
   },
@@ -41,18 +41,18 @@ export const homeContent = {
     title: "Key Features",
     items: [
       {
-        title: "Blood Sugar Tracking",
-        description: "Record daily blood sugar levels and monitor trends and progress.",
+        title: "Medical profiles",
+        description: "Patients store diabetes type, glucose targets, and emergency contacts securely.",
         icon: "activity" as const,
       },
       {
         title: "Appointments",
-        description: "Schedule consultations with doctors and manage upcoming appointments.",
+        description: "Book visits, get doctor approval, and join confirmed consultations online.",
         icon: "calendar" as const,
       },
       {
-        title: "Resources",
-        description: "Access educational articles and watch diabetes awareness videos.",
+        title: "Prescriptions & PDFs",
+        description: "Doctors issue prescriptions and recommendations; patients download PDF reports.",
         icon: "book" as const,
       },
     ],

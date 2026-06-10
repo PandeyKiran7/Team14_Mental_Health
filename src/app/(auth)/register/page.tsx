@@ -8,7 +8,8 @@ import FormInput from "@/components/formElements/FormInput";
 import FormPassword from "@/components/formElements/FormPassword";
 import FormSelect from "@/components/formElements/FormSelect";
 import { API_CONSTANTS } from "@/constants/staticConstant";
-import { apiPostCall } from "@/helper/apiService";
+import { getApiErrorMessage } from "@/helper/apiErrors";
+import { apiFormPostCall } from "@/helper/apiService";
 
 type RegisterResponse = {
   success: boolean;
@@ -26,6 +27,39 @@ const roleOptions = [
   { value: "PATIENT", label: "Patient" },
   { value: "DOCTOR", label: "Doctor" },
 ];
+
+const NAME_PATTERN = /^[A-Za-z\s]{2,50}$/;
+const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+const MOBILE_PATTERN = /^[0-9]{7,15}$/;
+
+function validateForm(form: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  mobileNumber: string;
+  dateOfBirth: string;
+}): string | null {
+  if (!NAME_PATTERN.test(form.firstName.trim())) {
+    return "First name must be at least 2 letters (A–Z only).";
+  }
+  if (!NAME_PATTERN.test(form.lastName.trim())) {
+    return "Last name must be at least 2 letters (A–Z only).";
+  }
+  if (!form.email.trim()) {
+    return "Email is required.";
+  }
+  if (!PASSWORD_PATTERN.test(form.password)) {
+    return "Password must be 8+ characters with upper, lower, number, and one of: @ $ ! % * ? &";
+  }
+  if (!MOBILE_PATTERN.test(form.mobileNumber.trim())) {
+    return "Mobile number must be 7–15 digits only.";
+  }
+  if (!form.dateOfBirth) {
+    return "Date of birth is required.";
+  }
+  return null;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -51,35 +85,50 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+
+    const validationError = validateForm(form);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await apiPostCall({
-        endpoint: "register",
-        firstName: form.firstName.trim(),
-        middleName: form.middleName.trim() || form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        email: form.email.trim(),
-        password: form.password,
-        mobileNumber: form.mobileNumber.trim(),
-        address: form.address.trim() || undefined,
-        gender: form.gender,
-        dateOfBirth: form.dateOfBirth,
-        role: form.role,
-      });
+      const middleName = form.middleName.trim() || form.firstName.trim();
+      const formData = new FormData();
+      formData.append("firstName", form.firstName.trim());
+      formData.append("middleName", middleName);
+      formData.append("lastName", form.lastName.trim());
+      formData.append("email", form.email.trim());
+      formData.append("password", form.password);
+      formData.append("mobileNumber", form.mobileNumber.trim());
+      formData.append("gender", form.gender);
+      formData.append("dateOfBirth", form.dateOfBirth);
+      formData.append("role", form.role);
+      if (form.address.trim()) {
+        formData.append("address", form.address.trim());
+      }
 
-      if (response.status !== API_CONSTANTS.success && response.status !== 201) {
-        const errData = response.data as { message?: string };
-        setError(errData?.message ?? "Registration failed. Check your details.");
+      const response = await apiFormPostCall("register", formData);
+
+      const ok =
+        response.status === API_CONSTANTS.success || response.status === 201;
+
+      if (!ok) {
+        setError(
+          getApiErrorMessage(
+            response.data,
+            "Registration failed. Check your details.",
+          ),
+        );
         return;
       }
 
       const body = response.data as RegisterResponse;
-      if (!body.success) {
+      if (body.success === false) {
         setError(
-          typeof body.message === "string"
-            ? body.message
-            : "Registration failed.",
+          getApiErrorMessage(body, "Registration failed. Check your details."),
         );
         return;
       }
@@ -147,7 +196,7 @@ export default function RegisterPage() {
           onChange={(e) => updateField("password", e.target.value)}
           required
           minLength={8}
-          hint="Must include uppercase, lowercase, number, and special character."
+          hint="Example: Test@1234 — must include upper, lower, number, and @ $ ! % * ? &"
         />
 
         <FormInput

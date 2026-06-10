@@ -12,6 +12,18 @@ const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
     title: "Users",
     subtitle: "Manage all registered patients, doctors, and admins",
   },
+  "/admin/doctors": {
+    title: "Doctors",
+    subtitle: "All registered doctors",
+  },
+  "/admin/patients": {
+    title: "Patients",
+    subtitle: "All registered patients",
+  },
+  "/admin/content-managers": {
+    title: "Content managers",
+    subtitle: "All content manager accounts",
+  },
   "/admin/resources": {
     title: "Resources",
     subtitle: "Articles, videos, and self-help content",
@@ -19,6 +31,10 @@ const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
   "/admin/monitoring": {
     title: "Monitoring",
     subtitle: "System health, usage metrics, and activity logs",
+  },
+  "/admin/profile": {
+    title: "My Profile",
+    subtitle: "Your admin account information",
   },
 };
 

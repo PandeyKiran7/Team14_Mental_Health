@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ListIcon } from "@phosphor-icons/react";
-import SignOutButton from "@/components/auth/SignOutButton";
+import UserNav from "@/components/auth/UserNav";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import SiteFooter from "@/components/layout/SiteFooter";
-import { getStoredUser, type StoredUser } from "@/lib/auth";
 
 type AdminShellProps = {
   title: string;
@@ -19,17 +18,7 @@ export default function AdminShell({
   subtitle,
   children,
 }: AdminShellProps) {
-  const [user, setUser] = useState<StoredUser | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    setUser(getStoredUser());
-  }, []);
-
-  const displayName =
-    user?.firstName && user?.lastName
-      ? `${user.firstName} ${user.lastName}`
-      : user?.email ?? "Admin";
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -58,13 +47,7 @@ export default function AdminShell({
               </Link>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="hidden text-sm text-zinc-600 sm:inline">
-                {displayName}
-                {user?.role ? ` · ${user.role}` : ""}
-              </span>
-              <SignOutButton />
-            </div>
+            <UserNav />
           </div>
         </header>
 
