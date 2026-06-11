@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import SignOutButton from "@/components/auth/SignOutButton";
+import UserNav from "@/components/auth/UserNav";
 import SiteFooter from "@/components/layout/SiteFooter";
-import { getStoredUser, type StoredUser } from "@/lib/auth";
 
 type DashboardShellProps = {
   title: string;
@@ -17,17 +15,6 @@ export default function DashboardShell({
   subtitle,
   children,
 }: DashboardShellProps) {
-  const [user, setUser] = useState<StoredUser | null>(null);
-
-  useEffect(() => {
-    setUser(getStoredUser());
-  }, []);
-
-  const displayName =
-    user?.firstName && user?.lastName
-      ? `${user.firstName} ${user.lastName}`
-      : user?.email ?? "User";
-
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <header className="sticky top-0 z-30 border-b border-teal-100 bg-white shadow-sm">
@@ -35,13 +22,7 @@ export default function DashboardShell({
           <Link href="/" className="text-lg font-bold text-teal-700">
             Diabetes Management System
           </Link>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-zinc-600 sm:inline">
-              {displayName}
-              {user?.role ? ` · ${user.role}` : ""}
-            </span>
-            <SignOutButton />
-          </div>
+          <UserNav />
         </div>
       </header>
 

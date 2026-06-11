@@ -21,6 +21,12 @@ export default function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          <Link
+            href="/register"
+            className="hidden rounded-full bg-teal-600 px-4 py-2 text-white hover:bg-teal-700 sm:inline-block"
+          >
+            Register
+          </Link>
           <Link href="/login" className="hover:text-teal-600">
             Login
           </Link>

@@ -34,6 +34,11 @@ const NAV_ITEMS = [
     icon: UsersIcon,
   },
   {
+    href: "/admin/content-managers",
+    label: "Content",
+    icon: BookOpenIcon,
+  },
+  {
     href: "/admin/resources",
     label: "Resources",
     icon: BookOpenIcon,

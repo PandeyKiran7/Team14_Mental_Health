@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { EnvelopeIcon, PhoneIcon, ChatCircleIcon, HospitalIcon, MapPinIcon, ClockIcon, ShareNetworkIcon } from "@phosphor-icons/react";
 
@@ -26,28 +25,6 @@ const contactOptions = [
 ];
 
 export default function ContactPage() {
-  const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    subject: "general",
-    message: "",
-  });
-
-  function handleChange(
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    // Replace with your actual form submission logic
-    setSubmitted(true);
-  }
-
   return (
     <section className="mx-auto max-w-6xl px-4 py-16">
 
@@ -87,113 +64,80 @@ export default function ContactPage() {
             All fields marked * are required.
           </p>
 
-          {submitted ? (
-            <div className="mt-8 rounded-xl bg-teal-50 border border-teal-200 p-8 text-center">
-              <div className="flex justify-center">
-                <div className="rounded-full bg-teal-100 p-3">
-                  <EnvelopeIcon size={32} weight="duotone" className="text-teal-600" />
-                </div>
-              </div>
-              <h3 className="mt-4 text-lg font-semibold text-teal-800">
-                Message received!
-              </h3>
-              <p className="mt-2 text-sm text-zinc-600">
-                Thanks, {form.name}. We'll reply to{" "}
-                <span className="font-medium">{form.email}</span> within 4 hours.
-              </p>
-              <button
-                onClick={() => {
-                  setSubmitted(false);
-                  setForm({ name: "", email: "", subject: "general", message: "" });
-                }}
-                className="mt-6 rounded-full border border-teal-600 px-6 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
-              >
-                Send another message
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-zinc-700">
-                    Full name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    value={form.name}
-                    onChange={handleChange}
-                    placeholder="Jane Smith"
-                    className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-zinc-700">
-                    Email address *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    required
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="jane@example.com"
-                    className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-                  />
-                </div>
-              </div>
+          <div
+            className="mt-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            role="status"
+          >
+            The contact form is not connected to the backend. Please use email or
+            phone above to reach support.
+          </div>
 
+          <div className="mt-8 space-y-5 opacity-60">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium text-zinc-700">
-                  Subject *
+                  Full name *
                 </label>
-                <select
-                  name="subject"
-                  value={form.subject}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-                >
-                  <option value="general">General enquiry</option>
-                  <option value="technical">Technical support</option>
-                  <option value="clinical">Clinical / medical question</option>
-                  <option value="billing">Billing & account</option>
-                  <option value="partnership">Partnership / research</option>
-                  <option value="feedback">Feedback & suggestions</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700">
-                  Message *
-                </label>
-                <textarea
-                  name="message"
-                  required
-                  rows={5}
-                  value={form.message}
-                  onChange={handleChange}
-                  placeholder="Describe how we can help you…"
-                  className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 resize-none"
+                <input
+                  type="text"
+                  disabled
+                  placeholder="Jane Smith"
+                  className="w-full cursor-not-allowed rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500"
                 />
               </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700">
+                  Email address *
+                </label>
+                <input
+                  type="email"
+                  disabled
+                  placeholder="jane@example.com"
+                  className="w-full cursor-not-allowed rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500"
+                />
+              </div>
+            </div>
 
-              <p className="text-xs text-zinc-400">
-                By submitting, you agree to our{" "}
-                <Link href="/privacy" className="text-teal-600 hover:underline">
-                  Privacy Policy
-                </Link>
-                . We never share your information with third parties.
-              </p>
-
-              <button
-                type="submit"
-                className="rounded-full bg-teal-700 px-8 py-3 font-semibold text-white hover:bg-teal-800 transition-colors"
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">
+                Subject *
+              </label>
+              <select
+                disabled
+                className="w-full cursor-not-allowed rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500"
               >
-                Send message
-              </button>
-            </form>
-          )}
+                <option>General enquiry</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">
+                Message *
+              </label>
+              <textarea
+                disabled
+                rows={5}
+                placeholder="Describe how we can help you…"
+                className="w-full cursor-not-allowed resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500"
+              />
+            </div>
+
+            <p className="text-xs text-zinc-400">
+              By submitting, you agree to our{" "}
+              <Link href="/privacy" className="text-teal-600 hover:underline">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed rounded-full bg-zinc-300 px-8 py-3 font-semibold text-zinc-500"
+            >
+              Send message (unavailable)
+            </button>
+          </div>
         </div>
 
         {/* Sidebar info — 2 cols */}
