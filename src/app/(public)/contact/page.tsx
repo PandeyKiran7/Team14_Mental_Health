@@ -64,14 +64,6 @@ export default function ContactPage() {
             All fields marked * are required.
           </p>
 
-          <div
-            className="mt-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-            role="status"
-          >
-            The contact form is not connected to the backend. Please use email or
-            phone above to reach support.
-          </div>
-
           <div className="mt-8 space-y-5 opacity-60">
             <div className="grid gap-5 sm:grid-cols-2">
               <div>

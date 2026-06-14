@@ -5,6 +5,7 @@ export function signOut() {
   if (typeof window !== "undefined") {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    window.dispatchEvent(new Event("auth-change"));
   }
 }
 
@@ -14,6 +15,10 @@ export type StoredUser = {
   lastName?: string;
   email?: string;
   role?: string;
+  mobileNumber?: string;
+  address?: string;
+  gender?: string;
+  isActive?: string;
 };
 
 export function getStoredUser(): StoredUser | null {
@@ -35,9 +40,11 @@ export function getAccessToken(): string | null {
 export function setAccessToken(accessToken: string) {
   if (typeof window === "undefined") return;
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  window.dispatchEvent(new Event("auth-change"));
 }
 
 export function setStoredUser(user: StoredUser) {
   if (typeof window === "undefined") return;
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new Event("auth-change"));
 }

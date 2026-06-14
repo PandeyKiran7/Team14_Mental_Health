@@ -1,7 +1,5 @@
-import RoleUsersTable from "@/components/admin/RoleUsersTable";
+import AdminDoctorsPanel from "@/components/admin/AdminDoctorsPanel";
 
 export default function AdminDoctorsPage() {
-  return (
-    <RoleUsersTable endpoint="doctors" emptyMessage="No doctors registered yet." />
-  );
+  return <AdminDoctorsPanel />;
 }

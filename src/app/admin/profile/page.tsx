@@ -1,5 +1,5 @@
-import AccountProfileCard from "@/components/profile/AccountProfileCard";
+import UserAccountForm from "@/components/profile/UserAccountForm";
 
 export default function AdminProfilePage() {
-  return <AccountProfileCard />;
+  return <UserAccountForm />;
 }

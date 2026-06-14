@@ -1,6 +1,7 @@
 import axios, { type AxiosResponse } from "axios";
 import { API_ENDPOINTS, resolveApiUrl } from "./apiList";
 import { getAccessToken } from "@/lib/auth";
+import { isPdfBlob, readBlobMessage, saveBlobAsFile } from "@/lib/downloadBlob";
 
 export type ApiCallData = {
   endpoint: keyof typeof API_ENDPOINTS;
@@ -72,10 +73,10 @@ export const apiGetCall = async (data: ApiCallData) => {
       headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
     });
   } catch (error) {
-    console.error("apiGetCall error:", error);
     if (axios.isAxiosError(error) && error.response) {
       return error.response;
     }
+    console.error("apiGetCall error:", error);
     throw error;
   }
 };
@@ -108,26 +109,51 @@ export const apiDownloadCall = async (
   token?: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> => {
   const url = resolveUrl({ endpoint, pathParams });
+  const authToken = token ?? getAccessToken() ?? undefined;
 
   try {
     const response = await axios.get(url, {
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
+      headers: getAuthHeaders(authToken),
       responseType: "blob",
+      validateStatus: () => true,
     });
 
-    if (response.status !== 200) {
-      return { ok: false, message: "Download failed." };
+    const blob = response.data as Blob;
+    const contentType = String(response.headers["content-type"] ?? "");
+    const looksLikePdf =
+      contentType.includes("application/pdf") ||
+      contentType.includes("application/octet-stream") ||
+      (await isPdfBlob(blob));
+
+    if (response.status < 200 || response.status >= 300) {
+      const message = await readBlobMessage(
+        blob,
+        `Download failed (${response.status}).`,
+      );
+      return { ok: false, message };
     }
 
-    const blob = new Blob([response.data], { type: "application/pdf" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    if (!looksLikePdf) {
+      const message = await readBlobMessage(blob, "Server did not return a PDF file.");
+      return { ok: false, message };
+    }
 
+    const pdfBlob =
+      blob.type === "application/pdf"
+        ? blob
+        : new Blob([blob], { type: "application/pdf" });
+
+    saveBlobAsFile(pdfBlob, filename);
     return { ok: true };
   } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+      const message = await readBlobMessage(
+        error.response.data,
+        "Cannot download file.",
+      );
+      return { ok: false, message };
+    }
+
     console.error("apiDownloadCall error:", error);
     return { ok: false, message: "Cannot download file." };
   }

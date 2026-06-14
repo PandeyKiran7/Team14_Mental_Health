@@ -23,11 +23,6 @@ const genderOptions = [
   { value: "OTHER", label: "Other" },
 ];
 
-const roleOptions = [
-  { value: "PATIENT", label: "Patient" },
-  { value: "DOCTOR", label: "Doctor" },
-];
-
 const NAME_PATTERN = /^[A-Za-z\s]{2,50}$/;
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
 const MOBILE_PATTERN = /^[0-9]{7,15}$/;
@@ -73,7 +68,6 @@ export default function RegisterPage() {
     address: "",
     gender: "FEMALE",
     dateOfBirth: "",
-    role: "PATIENT",
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -105,7 +99,7 @@ export default function RegisterPage() {
       formData.append("mobileNumber", form.mobileNumber.trim());
       formData.append("gender", form.gender);
       formData.append("dateOfBirth", form.dateOfBirth);
-      formData.append("role", form.role);
+      formData.append("role", "PATIENT");
       if (form.address.trim()) {
         formData.append("address", form.address.trim());
       }
@@ -143,9 +137,10 @@ export default function RegisterPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold text-teal-800">Register</h1>
+      <h1 className="text-2xl font-bold text-teal-800">Patient registration</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Create your account to access the diabetes management platform.
+        Create a patient account to book doctors and manage your diabetes care.
+        Doctor accounts are created by the admin.
       </p>
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -237,15 +232,6 @@ export default function RegisterPage() {
             required
           />
         </div>
-
-        <FormSelect
-          name="role"
-          label="Register as"
-          value={form.role}
-          onChange={(e) => updateField("role", e.target.value)}
-          options={roleOptions}
-          required
-        />
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

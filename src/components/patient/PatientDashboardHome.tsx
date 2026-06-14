@@ -1,11 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import {
+  CalendarIcon,
+  DropIcon,
+  HeartbeatIcon,
+  UserCircleIcon,
+} from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import DashboardHero, { getTimeGreeting } from "@/components/dashboard/DashboardHero";
+import QuickActionCard from "@/components/dashboard/QuickActionCard";
+import StatCard from "@/components/admin/StatCard";
 import { API_CONSTANTS } from "@/constants/staticConstant";
+import { isApiSuccess } from "@/helper/apiErrors";
 import { extractApiEntity } from "@/helper/apiResponse";
 import { apiGetCall } from "@/helper/apiService";
-import { getAccessToken } from "@/lib/auth";
+import { getAccessToken, getStoredUser } from "@/lib/auth";
+import { normalizeBookings } from "@/types/booking";
 
 type PatientMedicalData = {
   diabetesType?: string;
@@ -19,86 +30,148 @@ type PatientMedicalData = {
 };
 
 export default function PatientDashboardHome() {
+  const user = getStoredUser();
+  const displayName = user?.firstName
+    ? `${user.firstName} ${user.lastName ?? ""}`.trim()
+    : "Patient";
+
   const [profile, setProfile] = useState<PatientMedicalData | null>(null);
+  const [appointmentCount, setAppointmentCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadProfile() {
-      try {
-        const token = getAccessToken();
-        const response = await apiGetCall({
-          endpoint: "patient_medical_data",
-          token: token ?? undefined,
-        });
+    async function loadDashboard() {
+      const token = getAccessToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
-        if (response.status === API_CONSTANTS.success) {
+      try {
+        const [profileRes, bookingsRes] = await Promise.all([
+          apiGetCall({ endpoint: "patient_medical_data", token }),
+          apiGetCall({ endpoint: "bookings", token }),
+        ]);
+
+        if (profileRes.status === API_CONSTANTS.success) {
           setProfile(
-            extractApiEntity<PatientMedicalData>(response.data, "diabetesType"),
+            extractApiEntity<PatientMedicalData>(profileRes.data, "diabetesType"),
           );
+        }
+
+        if (isApiSuccess(bookingsRes.status)) {
+          const bookings = normalizeBookings(bookingsRes.data);
+          setAppointmentCount(bookings.length);
+          setPendingCount(bookings.filter((b) => b.status === "PENDING").length);
         }
       } finally {
         setLoading(false);
       }
     }
 
-    void loadProfile();
+    void loadDashboard();
   }, []);
 
   if (loading) {
-    return <p className="mt-6 text-sm text-zinc-500">Loading dashboard…</p>;
+    return <p className="text-sm text-zinc-500">Loading overview…</p>;
   }
 
   return (
-    <div className="mt-8 space-y-6">
-      <div className="rounded-xl border border-teal-100 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-teal-800">Welcome back</h2>
-        <p className="mt-2 text-sm text-zinc-600">
-          Your medical profile is set up. Track your health and manage care from here.
-        </p>
+    <div className="space-y-8">
+      <DashboardHero
+        greeting={getTimeGreeting()}
+        name={displayName}
+        description="Track your glucose targets, book doctor visits, and keep your medical profile up to date — all in one place."
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard
+          label="Diabetes type"
+          value={profile?.diabetesType ?? "—"}
+          icon={DropIcon}
+          accent="teal"
+        />
+        <StatCard
+          label="Glucose target"
+          value={
+            profile?.targetGlucoseMin != null && profile?.targetGlucoseMax != null
+              ? `${profile.targetGlucoseMin}–${profile.targetGlucoseMax}`
+              : "—"
+          }
+          icon={HeartbeatIcon}
+          accent="emerald"
+        />
+        <StatCard
+          label="Appointments"
+          value={appointmentCount}
+          icon={CalendarIcon}
+          accent="sky"
+          className="sm:col-span-2 xl:col-span-1"
+        />
       </div>
+
+      <section>
+        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+          Quick actions
+        </h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <QuickActionCard
+            href="/patient/bookings"
+            title="Book appointment"
+            description={
+              pendingCount > 0
+                ? `${pendingCount} request(s) waiting for doctor approval`
+                : "Schedule a visit with your doctor"
+            }
+            icon={CalendarIcon}
+          />
+          <QuickActionCard
+            href="/patient/profile"
+            title="Update medical profile"
+            description="Keep your health details and emergency contacts current"
+            icon={UserCircleIcon}
+          />
+        </div>
+      </section>
 
       {profile && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-teal-100 bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-teal-600">
-              Diabetes type
-            </p>
-            <p className="mt-1 font-semibold text-zinc-800">
-              {profile.diabetesType ?? "—"}
-            </p>
-            <p className="mt-1 text-sm text-zinc-500">
-              Blood group: {profile.bloodGroup ?? "—"}
-            </p>
+        <section className="rounded-xl border border-teal-100 bg-white p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-lg font-semibold text-teal-800">Health snapshot</h3>
+            <Link
+              href="/patient/profile"
+              className="text-sm font-medium text-teal-600 hover:text-teal-700 hover:underline"
+            >
+              Edit profile →
+            </Link>
           </div>
-          <div className="rounded-xl border border-teal-100 bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-teal-600">
-              Health targets
-            </p>
-            <p className="mt-1 font-semibold text-zinc-800">
-              Glucose {profile.targetGlucoseMin ?? "—"} – {profile.targetGlucoseMax ?? "—"}
-            </p>
-            <p className="mt-1 text-sm text-zinc-500">
-              {profile.heightCM ?? "—"} cm · {profile.weightKG ?? "—"} kg ·{" "}
-              {profile.activityLevel?.toLowerCase() ?? "—"} activity
-            </p>
-          </div>
-        </div>
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: "Blood group", value: profile.bloodGroup },
+              { label: "Height", value: profile.heightCM ? `${profile.heightCM} cm` : undefined },
+              { label: "Weight", value: profile.weightKG ? `${profile.weightKG} kg` : undefined },
+              {
+                label: "Activity",
+                value: profile.activityLevel?.toLowerCase(),
+              },
+              {
+                label: "Diet",
+                value: profile.dietaryPreference?.replace(/_/g, " ").toLowerCase(),
+              },
+            ].map((item) => (
+              <div key={item.label} className="rounded-lg bg-slate-50 px-4 py-3">
+                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  {item.label}
+                </dt>
+                <dd className="mt-1 text-sm font-semibold capitalize text-zinc-800">
+                  {item.value ?? "—"}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
       )}
-
-      <div className="flex flex-wrap gap-3">
-        <Link
-          href="/patient/bookings"
-          className="inline-flex rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
-        >
-          Appointments
-        </Link>
-        <Link
-          href="/patient/profile"
-          className="inline-flex rounded-lg border border-teal-200 bg-white px-4 py-2 text-sm font-medium text-teal-800 hover:bg-teal-50"
-        >
-          Edit medical profile
-        </Link>
-      </div>
     </div>
   );
 }

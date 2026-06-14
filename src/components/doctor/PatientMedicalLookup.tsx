@@ -5,7 +5,8 @@ import { API_CONSTANTS } from "@/constants/staticConstant";
 import { getApiErrorMessage } from "@/helper/apiErrors";
 import { apiGetCall } from "@/helper/apiService";
 import { getAccessToken } from "@/lib/auth";
-import { normalizeBookings } from "@/types/booking";
+import { loadMyBookings } from "@/lib/myBookings";
+import { Select } from "@/components/ui/select";
 import {
   normalizeUserWithMedicalData,
   type UserWithMedicalData,
@@ -26,6 +27,7 @@ function formatDate(value?: string) {
 export default function PatientMedicalLookup() {
   const [patients, setPatients] = useState<PatientOption[]>([]);
   const [loadingPatients, setLoadingPatients] = useState(true);
+  const [patientsError, setPatientsError] = useState<string | null>(null);
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,15 +35,17 @@ export default function PatientMedicalLookup() {
 
   const loadPatients = useCallback(async () => {
     setLoadingPatients(true);
+    setPatientsError(null);
+
+    const token = getAccessToken();
+    if (!token) {
+      setPatients([]);
+      setLoadingPatients(false);
+      return;
+    }
+
     try {
-      const response = await apiGetCall({
-        endpoint: "bookings",
-        token: getAccessToken() ?? undefined,
-      });
-
-      if (response.status !== API_CONSTANTS.success) return;
-
-      const bookings = normalizeBookings(response.data);
+      const bookings = await loadMyBookings(token);
       const map = new Map<number, PatientOption>();
 
       for (const booking of bookings) {
@@ -52,6 +56,9 @@ export default function PatientMedicalLookup() {
       }
 
       setPatients(Array.from(map.values()));
+    } catch {
+      setPatientsError("Could not load patient list. Check that the backend is running.");
+      setPatients([]);
     } finally {
       setLoadingPatients(false);
     }
@@ -101,7 +108,7 @@ export default function PatientMedicalLookup() {
   );
 
   return (
-    <div className="rounded-xl border border-teal-100 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-teal-100 bg-white p-6">
       <h2 className="text-lg font-semibold text-teal-800">Patient medical records</h2>
       <p className="mt-1 text-sm text-zinc-500">
         Select a patient who booked an appointment with you. Their medical data loads
@@ -112,12 +119,11 @@ export default function PatientMedicalLookup() {
         <label htmlFor="patientSelect" className="mb-1 block text-sm font-medium text-zinc-700">
           Patient *
         </label>
-        <select
+        <Select
           id="patientSelect"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
           disabled={loadingPatients}
-          className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-zinc-50"
         >
           <option value="">
             {loadingPatients
@@ -131,8 +137,12 @@ export default function PatientMedicalLookup() {
               {p.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
+
+      {patientsError && (
+        <p className="mt-4 text-sm text-red-600">{patientsError}</p>
+      )}
 
       {loading && (
         <p className="mt-4 text-sm text-zinc-500">Loading medical records…</p>

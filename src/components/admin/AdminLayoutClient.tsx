@@ -14,19 +14,23 @@ const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
   },
   "/admin/doctors": {
     title: "Doctors",
-    subtitle: "All registered doctors",
+    subtitle: "Register doctors and manage professional profiles",
+  },
+  "/admin/doctors/register": {
+    title: "Register doctor",
+    subtitle: "Create doctor account and professional profile",
   },
   "/admin/patients": {
     title: "Patients",
-    subtitle: "All registered patients",
+    subtitle: "Registered patients and medical record lookup",
   },
   "/admin/content-managers": {
     title: "Content managers",
-    subtitle: "All content manager accounts",
+    subtitle: "Register and manage content manager accounts",
   },
-  "/admin/resources": {
-    title: "Resources",
-    subtitle: "Articles, videos, and self-help content",
+  "/admin/content-managers/register": {
+    title: "Register content manager",
+    subtitle: "Create a new content manager account",
   },
   "/admin/monitoring": {
     title: "Monitoring",

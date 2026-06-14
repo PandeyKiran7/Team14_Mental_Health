@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { XIcon } from "@phosphor-icons/react";
-import { API_CONSTANTS } from "@/constants/staticConstant";
-import { getApiErrorMessage } from "@/helper/apiErrors";
+import {
+  getNetworkErrorMessage,
+  isApiSuccess,
+  resolveApiError,
+} from "@/helper/apiErrors";
 import { apiGetCall } from "@/helper/apiService";
 import { getAccessToken } from "@/lib/auth";
+import ApiMessage from "@/components/ui/ApiMessage";
 import { normalizeUserDetail, type AdminUser } from "@/types/admin";
 
 type UserDetailModalProps = {
@@ -32,14 +36,14 @@ export default function UserDetailModal({ userId, onClose }: UserDetailModalProp
           token: getAccessToken() ?? undefined,
         });
 
-        if (response.status !== API_CONSTANTS.success) {
-          setError(getApiErrorMessage(response.data, "Failed to load user."));
+        if (!isApiSuccess(response.status)) {
+          setError(resolveApiError(response, "Failed to load user."));
           return;
         }
 
         setUser(normalizeUserDetail(response.data));
-      } catch {
-        setError("Cannot reach backend.");
+      } catch (error) {
+        setError(getNetworkErrorMessage(error));
       } finally {
         setLoading(false);
       }
@@ -52,7 +56,6 @@ export default function UserDetailModal({ userId, onClose }: UserDetailModalProp
 
   const fields = user
     ? [
-        { label: "User ID", value: String(user.userId) },
         { label: "Name", value: `${user.firstName} ${user.lastName}` },
         { label: "Email", value: user.email },
         { label: "Role", value: user.role },
@@ -72,7 +75,7 @@ export default function UserDetailModal({ userId, onClose }: UserDetailModalProp
         className="absolute inset-0 bg-zinc-900/50"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-lg rounded-xl border border-teal-100 bg-white p-6 shadow-xl">
+      <div className="relative z-10 w-full max-w-lg rounded-xl border border-teal-100 bg-white p-6">
         <div className="flex items-start justify-between gap-4">
           <h2 className="text-lg font-semibold text-teal-800">User details</h2>
           <button
@@ -85,7 +88,7 @@ export default function UserDetailModal({ userId, onClose }: UserDetailModalProp
         </div>
 
         {loading && <p className="mt-6 text-sm text-zinc-500">Loading…</p>}
-        {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
+        {error && <ApiMessage message={error} className="mt-6" />}
 
         {!loading && !error && user && (
           <dl className="mt-6 grid gap-4 sm:grid-cols-2">

@@ -13,7 +13,7 @@ export default function TestimonialsSection() {
         {testimonials.items.map((item) => (
           <blockquote
             key={item.name}
-            className="flex flex-col rounded-2xl border border-teal-100 bg-white p-6 shadow-md"
+            className="flex flex-col rounded-2xl border border-teal-100 bg-white p-6"
           >
             <Quote className="h-8 w-8 text-teal-300" aria-hidden />
             <p className="mt-4 flex-1 text-sm leading-relaxed text-zinc-600">

@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FormButton from "@/components/formElements/FormButton";
 import FormInput from "@/components/formElements/FormInput";
 import FormPassword from "@/components/formElements/FormPassword";
-import { API_CONSTANTS } from "@/constants/staticConstant";
+import {
+  getApiErrorMessage,
+  getNetworkErrorMessage,
+  isApiSuccess,
+  resolveApiError,
+} from "@/helper/apiErrors";
 import { apiPostCall } from "@/helper/apiService";
+import { extractApiEntity } from "@/helper/apiResponse";
 import { setAccessToken, setStoredUser } from "@/lib/auth";
 import { doctorHasProfile, getDoctorHomePath } from "@/lib/doctorProfile";
 import { getPatientHomePath, patientHasProfile } from "@/lib/patientProfile";
@@ -18,24 +24,28 @@ type LoginUser = {
   lastName: string;
   email: string;
   role: string;
+  mobileNumber?: string;
+  address?: string;
+  gender?: string;
   password?: string;
 };
 
-type LoginResponse = {
-  success: boolean;
-  data?: {
-    accessToken: string;
-    user: LoginUser;
-  };
-  message?: string;
+type LoginPayload = {
+  accessToken: string;
+  user: LoginUser;
 };
 
 export default function LoginPage() {
   const router = useRouter();
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setSessionExpired(new URLSearchParams(window.location.search).get("expired") === "1");
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -49,39 +59,46 @@ export default function LoginPage() {
         password,
       });
 
-
-      console.log("Login response:", response);
-
-      if (response.status !== API_CONSTANTS.success) {
-        const errData = response.data as { message?: string };
-        setError(errData?.message ?? "Login failed. Check your credentials.");
+      if (!isApiSuccess(response.status)) {
+        setError(resolveApiError(response, "Login failed. Check your credentials."));
         return;
       }
 
-      const body = response.data as LoginResponse;
-      if (!body.success || !body.data?.accessToken) {
-        setError(body.message ?? "Login failed.");
+      const payload = extractApiEntity<LoginPayload>(response.data, "accessToken");
+      if (!payload?.accessToken || !payload.user) {
+        setError(getApiErrorMessage(response.data, "Login failed. Invalid server response."));
         return;
       }
 
-      setAccessToken(body.data.accessToken);
-      const { password: _, ...safeUser } = body.data.user;
-      setStoredUser(safeUser);
+      setAccessToken(payload.accessToken);
+      const { password: _, ...safeUser } = payload.user;
+      setStoredUser({
+        userId: safeUser.userId,
+        firstName: safeUser.firstName,
+        lastName: safeUser.lastName,
+        email: safeUser.email,
+        role: safeUser.role,
+        mobileNumber: safeUser.mobileNumber,
+        address: safeUser.address,
+        gender: safeUser.gender,
+      });
 
-      const role = body.data.user.role?.toLowerCase();
+      const role = payload.user.role?.toLowerCase();
       if (role === "patient") {
-        const hasProfile = await patientHasProfile(body.data.accessToken);
+        const hasProfile = await patientHasProfile(payload.accessToken);
         router.push(getPatientHomePath(hasProfile));
       } else if (role === "doctor") {
-        const hasProfile = await doctorHasProfile(body.data.accessToken);
+        const hasProfile = await doctorHasProfile(payload.accessToken);
         router.push(getDoctorHomePath(hasProfile));
       } else if (role === "admin") {
         router.push("/admin/dashboard");
+      } else if (role === "internal_manager") {
+        router.push("/content-manager/blogs");
       } else {
         router.push("/");
       }
-    } catch {
-      setError("Cannot reach backend. Start it on port 4000, then restart the frontend.");
+    } catch (error) {
+      setError(getNetworkErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -90,6 +107,12 @@ export default function LoginPage() {
   return (
     <>
       <h1 className="text-2xl font-bold text-teal-800">Login</h1>
+
+      {sessionExpired && (
+        <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Your session expired after 1 hour. Please log in again to continue.
+        </p>
+      )}
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
         <FormInput

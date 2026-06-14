@@ -3,13 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { API_CONSTANTS } from "@/constants/staticConstant";
 import { getApiErrorMessage } from "@/helper/apiErrors";
-import {
-  apiDownloadCall,
-  apiGetCall,
-  apiPatchCall,
-  apiPostCall,
-} from "@/helper/apiService";
+import { apiGetCall, apiPatchCall, apiPostCall } from "@/helper/apiService";
+import BookingDocumentSection from "@/components/booking/BookingDocumentSection";
 import { getAccessToken } from "@/lib/auth";
+import { downloadPrescriptionDocument } from "@/lib/downloadDocument";
 import {
   normalizePrescription,
   type Medicine,
@@ -41,6 +38,7 @@ export default function PrescriptionSection({
   const [dosageInstructions, setDosageInstructions] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -79,12 +77,13 @@ export default function PrescriptionSection({
     setSaving(true);
     setError(null);
 
+    const token = getAccessToken() ?? undefined;
     const payload = {
       bookingId,
       medicines,
       dosageInstructions: dosageInstructions || undefined,
       notes: notes || undefined,
-      token: getAccessToken() ?? undefined,
+      token,
     };
 
     try {
@@ -93,7 +92,7 @@ export default function PrescriptionSection({
             endpoint: "prescription",
             pathParams: { bookingId },
             medicines,
-            token: getAccessToken() ?? undefined,
+            token,
           })
         : await apiPostCall({
             ...payload,
@@ -116,48 +115,42 @@ export default function PrescriptionSection({
   }
 
   async function handleDownload() {
-    const result = await apiDownloadCall(
-      "prescription_download",
-      { bookingId },
-      `prescription-${bookingId}.pdf`,
-    );
+    if (!prescription) return;
+
+    const token = getAccessToken();
+    if (!token) {
+      setError("Please log in to download the prescription.");
+      return;
+    }
+
+    setDownloading(true);
+    setError(null);
+
+    const result = await downloadPrescriptionDocument(bookingId, prescription, token);
     if (!result.ok) setError(result.message);
+    setDownloading(false);
   }
 
   if (!isConfirmed) return null;
-  if (loading) return <p className="text-sm text-zinc-500">Loading prescription…</p>;
 
   const isDoctor = role === "DOCTOR";
 
   return (
-    <div className="mt-4 rounded-lg border border-zinc-100 bg-zinc-50 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="font-medium text-teal-800">Prescription</h4>
-        <div className="flex gap-2">
-          {prescription && (
-            <button
-              type="button"
-              onClick={() => void handleDownload()}
-              className="text-xs font-medium text-teal-700 underline"
-            >
-              Download PDF
-            </button>
-          )}
-          {isDoctor && (
-            <button
-              type="button"
-              onClick={() => setEditing((v) => !v)}
-              className="text-xs font-medium text-teal-700 underline"
-            >
-              {editing ? "Cancel" : prescription ? "Edit" : "Add prescription"}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-
-      {editing && isDoctor ? (
+    <BookingDocumentSection
+      title="Prescription"
+      error={error}
+      loading={loading}
+      loadingLabel="Loading prescription…"
+      exists={Boolean(prescription)}
+      isDoctor={isDoctor}
+      editing={editing}
+      saving={saving}
+      downloading={downloading}
+      editLabel={prescription ? "Edit" : "Add prescription"}
+      emptyLabel="No prescription yet."
+      onToggleEdit={() => setEditing((value) => !value)}
+      onDownload={() => void handleDownload()}
+      form={
         <div className="mt-3 space-y-3">
           {medicines.map((med, idx) => (
             <div key={idx} className="grid gap-2 sm:grid-cols-4">
@@ -178,7 +171,7 @@ export default function PrescriptionSection({
           ))}
           <button
             type="button"
-            onClick={() => setMedicines((m) => [...m, emptyMedicine()])}
+            onClick={() => setMedicines((items) => [...items, emptyMedicine()])}
             className="text-xs text-teal-700 underline"
           >
             + Add medicine
@@ -206,20 +199,19 @@ export default function PrescriptionSection({
             {saving ? "Saving…" : "Save prescription"}
           </button>
         </div>
-      ) : prescription ? (
+      }
+      view={
         <ul className="mt-3 space-y-2 text-sm text-zinc-700">
-          {prescription.medicines.map((med, i) => (
+          {prescription?.medicines.map((med, i) => (
             <li key={i}>
               <strong>{med.name}</strong> — {med.dose}, {med.frequency}, {med.duration}
             </li>
           ))}
-          {prescription.dosageInstructions && (
+          {prescription?.dosageInstructions && (
             <li className="text-zinc-500">{prescription.dosageInstructions}</li>
           )}
         </ul>
-      ) : (
-        <p className="mt-2 text-sm text-zinc-500">No prescription yet.</p>
-      )}
-    </div>
+      }
+    />
   );
 }

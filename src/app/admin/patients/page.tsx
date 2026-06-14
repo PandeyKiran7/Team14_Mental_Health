@@ -1,10 +1,5 @@
-import RoleUsersTable from "@/components/admin/RoleUsersTable";
+import AdminPatientsPanel from "@/components/admin/AdminPatientsPanel";
 
 export default function AdminPatientsPage() {
-  return (
-    <RoleUsersTable
-      endpoint="patients"
-      emptyMessage="No patients registered yet."
-    />
-  );
+  return <AdminPatientsPanel />;
 }

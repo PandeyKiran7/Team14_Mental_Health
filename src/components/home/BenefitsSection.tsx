@@ -17,7 +17,7 @@ export default function BenefitsSection() {
           return (
             <div
               key={benefit}
-              className="flex items-center gap-4 rounded-2xl border border-teal-100 bg-white p-6 shadow-md"
+              className="flex items-center gap-4 rounded-2xl border border-teal-100 bg-white p-6"
             >
               <Icon className="h-9 w-9 shrink-0 text-teal-600" aria-hidden />
               <p className="font-medium text-teal-900">{benefit}</p>

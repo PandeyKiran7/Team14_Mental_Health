@@ -35,12 +35,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/admin/content-managers",
-    label: "Content",
-    icon: BookOpenIcon,
-  },
-  {
-    href: "/admin/resources",
-    label: "Resources",
+    label: "Content managers",
     icon: BookOpenIcon,
   },
   {
@@ -71,7 +66,7 @@ export default function AdminSidebar({ open, onClose }: AdminSidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-teal-100 bg-white shadow-sm transition-transform duration-200 lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-teal-100 bg-white transition-transform duration-200 lg:static lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -108,7 +103,7 @@ export default function AdminSidebar({ open, onClose }: AdminSidebarProps) {
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition",
                   active
-                    ? "bg-teal-600 text-white shadow-sm"
+                    ? "bg-teal-600 text-white"
                     : "text-zinc-700 hover:bg-teal-50 hover:text-teal-800",
                 )}
               >

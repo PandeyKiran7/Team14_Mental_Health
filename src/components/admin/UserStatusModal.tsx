@@ -70,7 +70,7 @@ export default function UserStatusModal({
         className="absolute inset-0 bg-zinc-900/50"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md rounded-xl border border-teal-100 bg-white p-6 shadow-xl">
+      <div className="relative z-10 w-full max-w-md rounded-xl border border-teal-100 bg-white p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-teal-800">Update status</h2>

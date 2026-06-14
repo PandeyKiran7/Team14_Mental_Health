@@ -2,40 +2,53 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { API_CONSTANTS } from "@/constants/staticConstant";
-import { getApiErrorMessage } from "@/helper/apiErrors";
-import { apiGetCall, apiPatchCall } from "@/helper/apiService";
+import {
+  getNetworkErrorMessage,
+  isApiSuccess,
+  resolveApiError,
+} from "@/helper/apiErrors";
+import BookingReviewDialogs from "@/components/booking/BookingReviewDialogs";
+import { useBookingReview } from "@/hooks/useBookingReview";
 import { getAccessToken } from "@/lib/auth";
+import { fetchMyBookings } from "@/lib/myBookings";
+import { handleSessionExpired, isUnauthorizedStatus } from "@/lib/session";
 import { normalizeBookings, type Booking } from "@/types/booking";
-import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import ApiMessage from "@/components/ui/ApiMessage";
 
 export default function DoctorPendingAppointments() {
   const [pending, setPending] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionId, setActionId] = useState<number | null>(null);
-  const [denyTargetId, setDenyTargetId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    try {
-      const response = await apiGetCall({
-        endpoint: "bookings",
-        token: getAccessToken() ?? undefined,
-      });
+    const token = getAccessToken();
+    if (!token) {
+      setError("Please log in to view appointments.");
+      setPending([]);
+      setLoading(false);
+      return;
+    }
 
-      if (response.status !== API_CONSTANTS.success) {
-        setError(getApiErrorMessage(response.data, "Failed to load appointments."));
+    try {
+      const response = await fetchMyBookings(token);
+
+      if (!isApiSuccess(response.status)) {
+        if (isUnauthorizedStatus(response.status)) {
+          handleSessionExpired();
+          return;
+        }
+        setError(resolveApiError(response, "Failed to load appointments."));
         setPending([]);
         return;
       }
 
       const all = normalizeBookings(response.data);
-      setPending(all.filter((b) => b.status === "PENDING"));
-    } catch {
-      setError("Cannot reach backend.");
+      setPending(all.filter((booking) => booking.status === "PENDING"));
+    } catch (loadError) {
+      setError(getNetworkErrorMessage(loadError));
       setPending([]);
     } finally {
       setLoading(false);
@@ -46,52 +59,15 @@ export default function DoctorPendingAppointments() {
     void load();
   }, [load]);
 
-  async function handleApprove(bookingId: number) {
-    setActionId(bookingId);
-    setError(null);
-    try {
-      const response = await apiPatchCall({
-        endpoint: "approve_booking",
-        pathParams: { bookingId },
-        token: getAccessToken() ?? undefined,
-      });
-      if (response.status !== API_CONSTANTS.success) {
-        setError(getApiErrorMessage(response.data, "Failed to approve."));
-      } else {
-        await load();
-      }
-    } finally {
-      setActionId(null);
-    }
-  }
-
-  async function handleDeny(bookingId: number) {
-    setActionId(bookingId);
-    setError(null);
-    try {
-      const response = await apiPatchCall({
-        endpoint: "deny_booking",
-        pathParams: { bookingId },
-        token: getAccessToken() ?? undefined,
-      });
-      if (response.status !== API_CONSTANTS.success) {
-        setError(getApiErrorMessage(response.data, "Failed to deny."));
-      } else {
-        setDenyTargetId(null);
-        await load();
-      }
-    } finally {
-      setActionId(null);
-    }
-  }
+  const review = useBookingReview(load);
 
   return (
-    <div className="rounded-xl border border-teal-100 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-teal-100 bg-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-teal-800">Pending appointments</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Approve or deny patient requests. Patient sees status update on their side.
+            Approve or deny patient requests. Status updates on the patient side.
           </p>
         </div>
         <Link
@@ -103,7 +79,7 @@ export default function DoctorPendingAppointments() {
       </div>
 
       {loading && <p className="mt-4 text-sm text-zinc-500">Loading…</p>}
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && <ApiMessage message={error} variant="error" className="mt-4" />}
 
       {!loading && !error && pending.length === 0 && (
         <p className="mt-4 text-sm text-zinc-500">No pending appointment requests.</p>
@@ -127,16 +103,16 @@ export default function DoctorPendingAppointments() {
             <div className="flex gap-2">
               <button
                 type="button"
-                disabled={actionId === booking.id}
-                onClick={() => void handleApprove(booking.id)}
+                disabled={review.actionId === booking.id}
+                onClick={() => review.requestApprove(booking.id)}
                 className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
               >
                 Approve
               </button>
               <button
                 type="button"
-                disabled={actionId === booking.id}
-                onClick={() => setDenyTargetId(booking.id)}
+                disabled={review.actionId === booking.id}
+                onClick={() => review.requestDeny(booking.id)}
                 className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
               >
                 Deny
@@ -146,20 +122,13 @@ export default function DoctorPendingAppointments() {
         ))}
       </div>
 
-      <ConfirmDialog
-        open={denyTargetId !== null}
-        title="Deny appointment?"
-        message="Are you sure you want to deny this appointment request? The patient will be notified."
-        confirmLabel="Deny"
-        cancelLabel="Cancel"
-        variant="danger"
-        loading={actionId === denyTargetId}
-        onConfirm={() => {
-          if (denyTargetId !== null) void handleDeny(denyTargetId);
-        }}
-        onCancel={() => {
-          if (actionId === null) setDenyTargetId(null);
-        }}
+      <BookingReviewDialogs
+        {...review}
+        getTarget={(bookingId) => pending.find((booking) => booking.id === bookingId)}
+        onConfirmApprove={() => void review.confirmApprove()}
+        onConfirmDeny={() => void review.confirmDeny()}
+        onCancelApprove={review.cancelApprove}
+        onCancelDeny={review.cancelDeny}
       />
     </div>
   );

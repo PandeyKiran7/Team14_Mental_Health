@@ -1,38 +1,109 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { ListIcon } from "@phosphor-icons/react";
 import UserNav from "@/components/auth/UserNav";
+import DashboardSidebar from "@/components/layout/DashboardSidebar";
+import {
+  DOCTOR_NAV_ITEMS,
+  DOCTOR_SIDEBAR_META,
+} from "@/components/layout/doctorNav";
+import {
+  PATIENT_NAV_ITEMS,
+  PATIENT_SIDEBAR_META,
+} from "@/components/layout/patientNav";
+import {
+  CONTENT_MANAGER_NAV_ITEMS,
+  CONTENT_MANAGER_SIDEBAR_META,
+} from "@/components/layout/contentManagerNav";
 import SiteFooter from "@/components/layout/SiteFooter";
 
+type DashboardRole = "patient" | "doctor" | "content-manager";
+
 type DashboardShellProps = {
+  role: DashboardRole;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   children?: React.ReactNode;
 };
 
+const ROLE_CONFIG = {
+  patient: {
+    items: PATIENT_NAV_ITEMS,
+    ...PATIENT_SIDEBAR_META,
+  },
+  doctor: {
+    items: DOCTOR_NAV_ITEMS,
+    ...DOCTOR_SIDEBAR_META,
+  },
+  "content-manager": {
+    items: CONTENT_MANAGER_NAV_ITEMS,
+    ...CONTENT_MANAGER_SIDEBAR_META,
+  },
+} as const;
+
 export default function DashboardShell({
+  role,
   title,
   subtitle,
   children,
 }: DashboardShellProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const config = ROLE_CONFIG[role];
+
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="sticky top-0 z-30 border-b border-teal-100 bg-white shadow-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
-          <Link href="/" className="text-lg font-bold text-teal-700">
-            Diabetes Management System
-          </Link>
-          <UserNav />
-        </div>
-      </header>
+    <div className="flex min-h-screen bg-slate-50">
+      <DashboardSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        homeHref={config.homeHref}
+        panelTitle={config.panelTitle}
+        panelSubtitle={config.panelSubtitle}
+        panelIcon={config.panelIcon}
+        items={config.items}
+      />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 p-8">
-        <h1 className="text-2xl font-bold text-teal-800">{title}</h1>
-        <p className="mt-2 text-zinc-600">{subtitle}</p>
-        {children}
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 border-b border-teal-100 bg-white">
+          <div className="flex items-center justify-between gap-4 px-4 py-4 lg:px-8">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                aria-label="Open menu"
+                className="rounded-lg border border-teal-200 p-2 text-teal-800 hover:bg-teal-50 lg:hidden"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <ListIcon size={20} />
+              </button>
+              <Link
+                href="/"
+                className="hidden text-sm font-medium text-teal-700 hover:text-teal-800 sm:inline"
+              >
+                ← Back to site
+              </Link>
+            </div>
 
-      <SiteFooter />
+            <UserNav />
+          </div>
+        </header>
+
+        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+          {(title || subtitle) && (
+            <div className="mb-6">
+              {title && (
+                <h1 className="text-2xl font-bold text-teal-800">{title}</h1>
+              )}
+              {subtitle && (
+                <p className="mt-1 text-sm text-zinc-600">{subtitle}</p>
+              )}
+            </div>
+          )}
+          {children}
+        </main>
+
+        <SiteFooter />
+      </div>
     </div>
   );
 }

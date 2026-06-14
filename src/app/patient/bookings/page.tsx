@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import DashboardShell from "@/components/layout/DashboardShell";
 import BookingsPanel from "@/components/booking/BookingsPanel";
 import { getAccessToken } from "@/lib/auth";
 import { patientHasProfile } from "@/lib/patientProfile";
@@ -32,19 +31,8 @@ export default function PatientBookingsPage() {
   }, [router]);
 
   if (checking) {
-    return (
-      <DashboardShell title="Appointments" subtitle="Loading…">
-        <p className="mt-6 text-sm text-zinc-500">Loading…</p>
-      </DashboardShell>
-    );
+    return <p className="text-sm text-zinc-500">Loading…</p>;
   }
 
-  return (
-    <DashboardShell
-      title="Appointments"
-      subtitle="Book and manage your doctor appointments"
-    >
-      <BookingsPanel showBookForm />
-    </DashboardShell>
-  );
+  return <BookingsPanel showBookForm />;
 }

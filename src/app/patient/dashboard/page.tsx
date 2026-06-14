@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import DashboardShell from "@/components/layout/DashboardShell";
 import PatientDashboardHome from "@/components/patient/PatientDashboardHome";
 import { getAccessToken } from "@/lib/auth";
 import { patientHasProfile } from "@/lib/patientProfile";
@@ -32,19 +31,8 @@ export default function PatientDashboardPage() {
   }, [router]);
 
   if (checking) {
-    return (
-      <DashboardShell title="Patient Dashboard" subtitle="Loading…">
-        <p className="mt-6 text-sm text-zinc-500">Loading dashboard…</p>
-      </DashboardShell>
-    );
+    return <p className="text-sm text-zinc-500">Loading dashboard…</p>;
   }
 
-  return (
-    <DashboardShell
-      title="Patient Dashboard"
-      subtitle="Overview of your health information"
-    >
-      <PatientDashboardHome />
-    </DashboardShell>
-  );
+  return <PatientDashboardHome />;
 }

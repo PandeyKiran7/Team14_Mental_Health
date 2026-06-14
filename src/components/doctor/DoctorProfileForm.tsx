@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import FormButton from "@/components/formElements/FormButton";
 import FormInput from "@/components/formElements/FormInput";
 import FormField from "@/components/formElements/FormField";
+import ProfileDetailGrid from "@/components/profile/ProfileDetailGrid";
+import ProfileEditButton from "@/components/profile/ProfileEditButton";
+import ProfileSection from "@/components/profile/ProfileSection";
+import ApiMessage from "@/components/ui/ApiMessage";
 import { API_CONSTANTS } from "@/constants/staticConstant";
 import { getApiErrorMessage } from "@/helper/apiErrors";
 import { extractApiEntity } from "@/helper/apiResponse";
@@ -82,10 +86,13 @@ function toPayload(form: typeof emptyForm) {
 export default function DoctorProfileForm() {
   const router = useRouter();
   const [form, setForm] = useState(emptyForm);
+  const [snapshot, setSnapshot] = useState(emptyForm);
   const [hasRecord, setHasRecord] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -101,6 +108,7 @@ export default function DoctorProfileForm() {
 
         if (response.status === 404) {
           setHasRecord(false);
+          setEditing(true);
           return;
         }
 
@@ -112,8 +120,11 @@ export default function DoctorProfileForm() {
 
         const doctor = extractApiEntity<DoctorData>(response.data, "licenseNumber");
         if (doctor) {
-          setForm(toFormValues(doctor));
+          const values = toFormValues(doctor);
+          setForm(values);
+          setSnapshot(values);
           setHasRecord(true);
+          setEditing(false);
         }
       } catch {
         setError("Cannot reach backend.");
@@ -138,9 +149,17 @@ export default function DoctorProfileForm() {
     }));
   }
 
+  function handleCancelEdit() {
+    setForm(snapshot);
+    setEditing(false);
+    setError(null);
+    setMessage(null);
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setMessage(null);
     if (form.availableDays.length === 0) {
       setError("Select at least one available day.");
       return;
@@ -172,8 +191,15 @@ export default function DoctorProfileForm() {
       }
 
       setHasRecord(true);
-      router.push("/doctor/dashboard");
-      return;
+      setSnapshot(form);
+
+      if (!hasRecord) {
+        router.push("/doctor/dashboard");
+        return;
+      }
+
+      setEditing(false);
+      setMessage("Professional profile updated successfully.");
     } catch {
       setError("Cannot reach backend.");
     } finally {
@@ -183,15 +209,52 @@ export default function DoctorProfileForm() {
 
   if (loading) {
     return (
-      <p className="mt-6 text-sm text-zinc-500">Loading doctor profile…</p>
+      <ProfileSection title="Professional profile">
+        <p className="text-sm text-zinc-500">Loading doctor profile…</p>
+      </ProfileSection>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-4 rounded-xl border border-teal-100 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-teal-800">
-        {hasRecord ? "Your professional profile" : "Complete your doctor profile"}
-      </h2>
+    <ProfileSection
+      title={hasRecord ? "Professional profile" : "Complete professional profile"}
+      description={
+        editing || !hasRecord
+          ? "Your license, specialization, and availability for patient bookings."
+          : "Your saved professional information."
+      }
+      action={
+        hasRecord && !editing && !loading ? (
+          <ProfileEditButton onClick={() => setEditing(true)} />
+        ) : null
+      }
+    >
+      {hasRecord && !editing ? (
+        <div className="space-y-4">
+          <ProfileDetailGrid
+            items={[
+              { label: "License number", value: form.licenseNumber },
+              { label: "Qualification", value: form.qualification },
+              { label: "Specialization", value: form.specialization },
+              { label: "Years of experience", value: form.yearsOfExperience },
+              { label: "Consultation fee", value: form.consultationFee },
+              {
+                label: "Availability",
+                value: `${form.availableFrom} – ${form.availableTo}`,
+              },
+              {
+                label: "Available days",
+                value: form.availableDays
+                  .map((day) => day.charAt(0) + day.slice(1).toLowerCase())
+                  .join(", "),
+              },
+              { label: "Biography", value: form.biography },
+            ]}
+          />
+          {message && <ApiMessage message={message} variant="success" />}
+        </div>
+      ) : (
+      <form onSubmit={handleSubmit} className="space-y-4">
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormInput
@@ -296,9 +359,24 @@ export default function DoctorProfileForm() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <FormButton type="submit" disabled={saving}>
-        {saving ? "Saving…" : hasRecord ? "Update profile" : "Save profile"}
-      </FormButton>
-    </form>
+      <div className="flex flex-wrap gap-3">
+        <FormButton type="submit" disabled={saving} fullWidth={false}>
+          {saving ? "Saving…" : hasRecord ? "Update profile" : "Save profile"}
+        </FormButton>
+        {hasRecord && (
+          <FormButton
+            type="button"
+            variant="secondary"
+            fullWidth={false}
+            disabled={saving}
+            onClick={handleCancelEdit}
+          >
+            Cancel
+          </FormButton>
+        )}
+      </div>
+      </form>
+      )}
+    </ProfileSection>
   );
 }

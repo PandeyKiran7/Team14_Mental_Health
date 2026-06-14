@@ -7,14 +7,6 @@ export default function ContactForm() {
 
   return (
     <div className="space-y-5">
-      <div
-        className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-        role="status"
-      >
-        Contact messages are not sent to the server yet — there is no contact API
-        in the backend. Use the email or phone details on this page instead.
-      </div>
-
       <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
         <div>
           <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-zinc-700">

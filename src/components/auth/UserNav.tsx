@@ -73,7 +73,7 @@ export default function UserNav() {
 
       {open && (
         <div
-          className="absolute right-0 z-50 mt-2 w-60 rounded-md bg-white shadow-lg ring-1 ring-black/5"
+          className="absolute right-0 z-50 mt-2 w-60 rounded-md bg-white ring-1 ring-black/5"
           role="menu"
         >
           <div className="border-b border-gray-100 px-4 py-3">
