@@ -11,7 +11,6 @@ import { normalizeUsers, type AdminUser } from "@/types/admin";
 import AdminDoctorProfessionalModal from "@/components/admin/AdminDoctorProfessionalModal";
 import AdminUserEditModal from "@/components/admin/AdminUserEditModal";
 import UserStatusModal from "@/components/admin/UserStatusModal";
-import ApiMessage from "@/components/ui/ApiMessage";
 
 export default function AdminDoctorsPanel() {
   const [doctors, setDoctors] = useState<AdminUser[]>([]);
@@ -52,11 +51,6 @@ export default function AdminDoctorsPanel() {
 
   return (
     <div className="space-y-6">
-      <ApiMessage
-        variant="info"
-        message="Doctor finance and salary payouts are available in the Internal Manager dashboard (Doctor finance), not from the Admin panel."
-      />
-
       <div className="flex flex-wrap items-center justify-end gap-3">
         <Link
           href="/admin/doctors/register"

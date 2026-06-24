@@ -96,7 +96,7 @@ export default function AdminDoctorFinanceModal({
           <div>
             <h2 className="text-lg font-semibold text-teal-800">Doctor finance</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              User ID: {doctor.userId} · {doctor.firstName} {doctor.lastName} · {doctor.email}
+              {doctor.firstName} {doctor.lastName} · {doctor.email}
             </p>
           </div>
           <button

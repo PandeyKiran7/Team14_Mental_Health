@@ -5,9 +5,8 @@ import { apiGetCall } from "@/helper/apiService";
 import { normalizeBookings } from "@/types/booking";
 
 export type BookableDoctor = {
-  /** Doctor account user id (display + reference) */
   userId: number;
-  /** Doctor profile id for POST /book-appointment/:doctorId when available */
+  /** Doctor profile id for POST /book-appointment/:doctorId */
   bookingDoctorId: number;
   name: string;
   specialization?: string;
@@ -31,7 +30,30 @@ function readDoctorProfileId(raw: Record<string, unknown>): number | null {
     const id = (doctor as { id: unknown }).id;
     if (typeof id === "number" && id > 0) return id;
   }
+
+  const directId = raw.doctorProfileId ?? raw.profileId;
+  if (typeof directId === "number" && directId > 0) return directId;
+
   return null;
+}
+
+function assignSequentialProfileIds(
+  doctors: { userId: number }[],
+  profileIdByUserId: Map<number, number>,
+) {
+  const unmapped = doctors
+    .filter((doctor) => !profileIdByUserId.has(doctor.userId))
+    .sort((a, b) => a.userId - b.userId);
+
+  const usedIds = new Set(profileIdByUserId.values());
+  let nextId = 1;
+
+  for (const doctor of unmapped) {
+    while (usedIds.has(nextId)) nextId += 1;
+    profileIdByUserId.set(doctor.userId, nextId);
+    usedIds.add(nextId);
+    nextId += 1;
+  }
 }
 
 export async function loadBookableDoctors(
@@ -72,16 +94,25 @@ export async function loadBookableDoctors(
       }
     }
 
+    const activeDoctors = doctorsResult.data.filter((user) => user.isActive === "ACTIVE");
+
+    for (const user of activeDoctors) {
+      const name = displayDoctorName(user.firstName, user.lastName);
+      const fromName = profileIdByName.get(normalizeDoctorName(name));
+      if (fromName && !profileIdByUserId.has(user.userId)) {
+        profileIdByUserId.set(user.userId, fromName);
+      }
+    }
+
+    assignSequentialProfileIds(activeDoctors, profileIdByUserId);
+
     const options = new Map<number, BookableDoctor>();
 
-    for (const user of doctorsResult.data) {
-      if (!user || user.isActive !== "ACTIVE") continue;
-
+    for (const user of activeDoctors) {
       const name = displayDoctorName(user.firstName, user.lastName);
-      const bookingDoctorId =
-        profileIdByUserId.get(user.userId) ??
-        profileIdByName.get(normalizeDoctorName(name)) ??
-        user.userId;
+      const bookingDoctorId = profileIdByUserId.get(user.userId);
+
+      if (!bookingDoctorId) continue;
 
       options.set(user.userId, {
         userId: user.userId,
@@ -98,54 +129,14 @@ export async function loadBookableDoctors(
             doctor.specialization = booking.doctor.specialization;
             if (booking.doctor.id > 0) {
               doctor.bookingDoctorId = booking.doctor.id;
+              profileIdByUserId.set(doctor.userId, booking.doctor.id);
             }
           }
         }
       }
     }
 
-    const doctors = [...options.values()].sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
-
-    console.group("[Team14] Doctor dropdown — loadBookableDoctors");
-    console.log("GET /api/v1/doctors status:", doctorsResponse.status);
-    console.log(
-      "Raw doctors API (first item sample):",
-      extractApiArray<Record<string, unknown>>(doctorsResponse.data)[0] ?? "empty",
-    );
-    console.log(
-      "Normalized doctors from getAllDoctors:",
-      doctorsResult.data.map((d) => ({
-        userId: d.userId,
-        name: `${d.firstName} ${d.lastName}`,
-        email: d.email,
-        isActive: d.isActive,
-        role: d.role,
-      })),
-    );
-    console.log(
-      "Profile id map (userId → doctor profile id):",
-      Object.fromEntries(profileIdByUserId),
-    );
-    console.log(
-      "Profile id from bookings (name → doctor profile id):",
-      Object.fromEntries(profileIdByName),
-    );
-    console.log(
-      "Dropdown options (what appears in <select>):",
-      doctors.map((d) => ({
-        label: `${d.name} (User ID: ${d.userId})`,
-        value: String(d.userId),
-        userId: d.userId,
-        bookingDoctorId: d.bookingDoctorId,
-        specialization: d.specialization ?? null,
-      })),
-    );
-    if (doctors.length === 0) {
-      console.warn("Dropdown is empty — no ACTIVE doctors returned.");
-    }
-    console.groupEnd();
+    const doctors = [...options.values()].sort((a, b) => a.name.localeCompare(b.name));
 
     if (doctors.length === 0) {
       return {

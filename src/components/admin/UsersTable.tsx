@@ -201,7 +201,7 @@ export default function UsersTable({
                       </button>
                       <button
                         type="button"
-                        title="Edit user"
+                        title="Set account status"
                         onClick={() => setEditTarget(user)}
                         className="cursor-pointer rounded border border-teal-200 p-2 hover:bg-teal-50"
                       >

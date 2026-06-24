@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { ListIcon } from "@phosphor-icons/react";
 import UserNav from "@/components/auth/UserNav";
@@ -21,14 +20,14 @@ export default function AdminShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen flex-1 w-full bg-slate-50">
       <AdminSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-teal-100 bg-white">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
+        <header className="sticky top-0 z-50 shrink-0 border-b border-teal-100 bg-white">
           <div className="flex items-center justify-between gap-4 px-4 py-4 lg:px-8">
             <div className="flex items-center gap-3">
               <button
@@ -39,12 +38,6 @@ export default function AdminShell({
               >
                 <ListIcon size={20} />
               </button>
-              <Link
-                href="/"
-                className="hidden text-sm font-medium text-teal-700 hover:text-teal-800 sm:inline"
-              >
-                ← Back to site
-              </Link>
             </div>
 
             <UserNav />

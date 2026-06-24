@@ -7,6 +7,7 @@ import {
 } from "@/helper/apiService";
 import { getAccessToken } from "@/lib/auth";
 import { splitCommaList } from "@/lib/splitList";
+import { resolveBlogCoverImageUrl, coverImageForStorage } from "@/lib/blogCoverImage";
 import {
   normalizeBlog,
   normalizeBlogs,
@@ -34,7 +35,7 @@ function buildPayload(values: BlogFormValues) {
 
   const coverImage = values.coverImage?.trim();
   if (coverImage) {
-    payload.coverImage = coverImage;
+    payload.coverImage = coverImageForStorage(coverImage);
   }
 
   return payload;
@@ -47,6 +48,13 @@ const LIST_ENDPOINT = {
 } as const;
 
 export type BlogListStatus = keyof typeof LIST_ENDPOINT;
+
+function withResolvedCoverImage(blog: Blog): Blog {
+  return {
+    ...blog,
+    coverImage: resolveBlogCoverImageUrl(blog.coverImage),
+  };
+}
 
 export async function fetchBlogs(
   status: BlogListStatus,
@@ -69,7 +77,7 @@ export async function fetchBlogs(
     return { ok: false, message };
   }
 
-  return { ok: true, data: normalizeBlogs(response.data) };
+  return { ok: true, data: normalizeBlogs(response.data).map(withResolvedCoverImage) };
 }
 
 async function fetchBlogFromLists(blogId: number): Promise<Blog | null> {
@@ -94,13 +102,13 @@ export async function fetchBlogById(blogId: number): Promise<ActionResult<Blog>>
   if (isApiSuccess(response.status)) {
     const blog = normalizeBlog(response.data);
     if (blog) {
-      return { ok: true, data: blog };
+      return { ok: true, data: withResolvedCoverImage(blog) };
     }
   }
 
   const fallback = await fetchBlogFromLists(blogId);
   if (fallback) {
-    return { ok: true, data: fallback };
+    return { ok: true, data: withResolvedCoverImage(fallback) };
   }
 
   if (!isApiSuccess(response.status)) {
@@ -132,7 +140,7 @@ export async function createBlog(values: BlogFormValues): Promise<ActionResult<B
     return { ok: false, message: "Blog created but response was invalid." };
   }
 
-  return { ok: true, data: blog };
+  return { ok: true, data: withResolvedCoverImage(blog) };
 }
 
 export async function updateBlog(
@@ -150,7 +158,7 @@ export async function updateBlog(
   if (values.status !== undefined) payload.status = values.status;
   if (values.coverImage !== undefined) {
     const coverImage = values.coverImage.trim();
-    if (coverImage) payload.coverImage = coverImage;
+    if (coverImage) payload.coverImage = coverImageForStorage(coverImage);
   }
 
   const response = await apiPatchCall({
@@ -172,7 +180,7 @@ export async function updateBlog(
     return { ok: false, message: "Blog updated but response was invalid." };
   }
 
-  return { ok: true, data: blog };
+  return { ok: true, data: withResolvedCoverImage(blog) };
 }
 
 export async function deleteBlog(blogId: number): Promise<ActionResult<null>> {

@@ -1,7 +1,6 @@
 "use client";
 
 import { XIcon } from "@phosphor-icons/react";
-import ApiMessage from "@/components/ui/ApiMessage";
 import type { AdminUser } from "@/types/admin";
 
 type AdminDoctorProfessionalModalProps = {
@@ -40,12 +39,6 @@ export default function AdminDoctorProfessionalModal({
             <XIcon size={20} />
           </button>
         </div>
-
-        <ApiMessage
-          variant="info"
-          className="mt-6"
-          message="Professional profile details are added by the doctor after they log in. Admin can only view the account here."
-        />
 
         <dl className="mt-6 grid gap-3 sm:grid-cols-2 text-sm">
           {[

@@ -1,5 +1,5 @@
-import DoctorFinancePanel from "@/components/content-manager/DoctorFinancePanel";
+import AdminMonitoringPanel from "@/components/admin/AdminMonitoringPanel";
 
 export default function AdminMonitoringPage() {
-  return <DoctorFinancePanel />;
+  return <AdminMonitoringPanel />;
 }

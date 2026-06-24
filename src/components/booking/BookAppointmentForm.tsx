@@ -47,11 +47,6 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
 
       const result = await loadBookableDoctors(token);
       setDoctors(result.doctors);
-      console.log("[Team14] Doctor dropdown — BookAppointmentForm state:", {
-        count: result.doctors.length,
-        options: result.doctors,
-        error: result.error,
-      });
       if (result.error) {
         setError(result.error);
       }
@@ -108,7 +103,7 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
         const apiError = resolveApiError(response, "Failed to book appointment.");
         if (response.status === 404 && apiError.toLowerCase().includes("doctor")) {
           setError(
-            `Doctor not found (User ID ${selectedDoctor.userId}). They may not have completed their professional profile yet.`,
+            "This doctor is not available for booking yet. They may need to complete their professional profile first.",
           );
         } else {
           setError(apiError);
@@ -140,12 +135,7 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
             id="doctorUserId"
             required
             value={doctorUserId}
-            onChange={(e) => {
-              const next = e.target.value;
-              setDoctorUserId(next);
-              const picked = doctors.find((d) => String(d.userId) === next);
-              console.log("[Team14] Doctor dropdown — selected:", picked ?? null);
-            }}
+            onChange={(e) => setDoctorUserId(e.target.value)}
             disabled={loadingDoctors || doctors.length === 0}
           >
             <option value="">
@@ -157,16 +147,11 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
             </option>
             {doctors.map((doctor) => (
               <option key={doctor.userId} value={String(doctor.userId)}>
-                {doctor.name} (User ID: {doctor.userId})
+                {doctor.name}
                 {doctor.specialization ? ` — ${doctor.specialization}` : ""}
               </option>
             ))}
           </Select>
-          {selectedDoctor && (
-            <p className="mt-1.5 text-xs text-zinc-500">
-              Selected doctor User ID: <span className="font-mono">{selectedDoctor.userId}</span>
-            </p>
-          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">

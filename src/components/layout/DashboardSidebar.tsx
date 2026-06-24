@@ -46,8 +46,8 @@ export default function DashboardSidebar({
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-teal-100 bg-white transition-transform duration-200 lg:static lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full",
+          "fixed inset-y-0 left-0 z-50 flex h-svh w-64 flex-col border-r border-teal-100 bg-white transition-transform duration-200",
+          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
         <div className="flex items-center justify-between border-b border-teal-100 px-5 py-4">
@@ -70,7 +70,7 @@ export default function DashboardSidebar({
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {items.map(({ href, label, icon: ItemIcon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
 

@@ -2,12 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { CurrencyDollarIcon } from "@phosphor-icons/react";
-import { API_CONSTANTS } from "@/constants/staticConstant";
-import { getApiErrorMessage } from "@/helper/apiErrors";
-import { apiGetCall } from "@/helper/apiService";
-import { getAccessToken } from "@/lib/auth";
 import AdminDoctorFinanceModal from "@/components/admin/AdminDoctorFinanceModal";
-import { normalizeUsers, type AdminUser } from "@/types/admin";
+import { getAccessToken } from "@/lib/auth";
+import { getDoctorUsersFromAllUsers } from "@/lib/userApi";
+import type { AdminUser } from "@/types/admin";
 
 export default function DoctorFinancePanel() {
   const [doctors, setDoctors] = useState<AdminUser[]>([]);
@@ -19,25 +17,17 @@ export default function DoctorFinancePanel() {
     setLoading(true);
     setError(null);
 
-    try {
-      const response = await apiGetCall({
-        endpoint: "doctors",
-        token: getAccessToken() ?? undefined,
-      });
+    const result = await getDoctorUsersFromAllUsers(getAccessToken() ?? undefined);
 
-      if (response.status !== API_CONSTANTS.success) {
-        setError(getApiErrorMessage(response.data, "Failed to load doctors."));
-        setDoctors([]);
-        return;
-      }
-
-      setDoctors(normalizeUsers(response.data));
-    } catch {
-      setError("Cannot reach backend.");
+    if (!result.ok) {
+      setError(result.message);
       setDoctors([]);
-    } finally {
       setLoading(false);
+      return;
     }
+
+    setDoctors(result.data.filter((doctor) => doctor.isActive === "ACTIVE"));
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -46,11 +36,6 @@ export default function DoctorFinancePanel() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-zinc-600">
-        View paid appointment revenue and process doctor salary payouts (80% of paid
-        consultation fees).
-      </p>
-
       {loading && (
         <div className="rounded-xl border border-teal-100 bg-white p-8 text-center">
           <p className="text-sm text-zinc-500">Loading doctors…</p>

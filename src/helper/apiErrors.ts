@@ -119,8 +119,7 @@ export function resolveApiError(
   return getApiErrorMessage(response.data, fallback, response.status);
 }
 
-const ADMIN_FORBIDDEN_HINT =
-  "Your admin account is not allowed to call this API. Ask the backend team to enable ADMIN on this route, or use an Internal Manager account.";
+const ADMIN_FORBIDDEN_HINT = "You do not have permission to access this URL.";
 
 export function resolveAdminMutationError(
   response: { status: number; data: unknown },

@@ -6,6 +6,13 @@ import FormInput from "@/components/formElements/FormInput";
 import FormSelect from "@/components/formElements/FormSelect";
 import { slugify } from "@/lib/slugify";
 import {
+  coverImageForForm,
+  coverImageForStorage,
+  isValidCoverImageUrl,
+  resolveBlogCoverImageUrl,
+  sanitizeCoverImageInput,
+} from "@/lib/blogCoverImage";
+import {
   BLOG_CATEGORIES,
   formatBlogCategory,
   type Blog,
@@ -44,6 +51,7 @@ export default function BlogForm({
 }: BlogFormProps) {
   const [values, setValues] = useState<BlogFormValues>(emptyValues);
   const [slugEdited, setSlugEdited] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initial) {
@@ -60,7 +68,7 @@ export default function BlogForm({
       category: initial.category,
       tags: initial.tags?.join(", ") ?? "",
       status: initial.status,
-      coverImage: initial.coverImage ?? "",
+      coverImage: coverImageForForm(initial.coverImage),
     });
     setSlugEdited(true);
   }, [initial]);
@@ -73,6 +81,37 @@ export default function BlogForm({
       }
       return next;
     });
+  }
+
+  function validateCoverImage(url: string): string | null {
+    const trimmed = sanitizeCoverImageInput(url);
+    if (!trimmed) return null;
+
+    if (!isValidCoverImageUrl(trimmed)) {
+      return "Enter a valid cover image URL (https://…) or leave the field empty.";
+    }
+
+    return null;
+  }
+
+  const previewUrl = resolveBlogCoverImageUrl(values.coverImage);
+
+  function handleSave(status: BlogStatus) {
+    const sanitizedCover = sanitizeCoverImageInput(values.coverImage);
+    const coverError = validateCoverImage(sanitizedCover);
+    if (coverError) {
+      setLocalError(coverError);
+      return;
+    }
+
+    setLocalError(null);
+    onSave(
+      {
+        ...values,
+        coverImage: coverImageForStorage(sanitizedCover),
+      },
+      status,
+    );
   }
 
   return (
@@ -143,24 +182,48 @@ export default function BlogForm({
         label="Cover image URL"
         type="url"
         value={values.coverImage}
-        onChange={(event) => updateField("coverImage", event.target.value)}
-        hint="Optional. Paste a direct image URL (https://…)."
+        onChange={(event) => {
+          setLocalError(null);
+          updateField("coverImage", sanitizeCoverImageInput(event.target.value));
+        }}
+        onPaste={(event) => {
+          const pasted = event.clipboardData.getData("text");
+          if (!pasted) return;
+          event.preventDefault();
+          setLocalError(null);
+          updateField("coverImage", sanitizeCoverImageInput(pasted));
+        }}
+        hint="Optional. Paste one direct image URL only (https://…)."
       />
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {previewUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={previewUrl}
+          alt="Cover preview"
+          className="h-40 w-full rounded-lg border border-teal-100 object-cover"
+          onError={() =>
+            setLocalError("This image URL could not be loaded. Check the link and try again.")
+          }
+        />
+      )}
+
+      {(localError || error) && (
+        <p className="text-sm text-red-600">{localError ?? error}</p>
+      )}
 
       <div className="flex flex-wrap gap-3">
         <FormButton
           type="button"
           disabled={saving}
-          onClick={() => onSave(values, "DRAFT")}
+          onClick={() => handleSave("DRAFT")}
         >
           {saving ? "Saving…" : "Save draft"}
         </FormButton>
         <FormButton
           type="button"
           disabled={saving}
-          onClick={() => onSave(values, "PUBLISHED")}
+          onClick={() => handleSave("PUBLISHED")}
         >
           {saving ? "Saving…" : "Publish"}
         </FormButton>
@@ -168,7 +231,7 @@ export default function BlogForm({
           <FormButton
             type="button"
             disabled={saving}
-            onClick={() => onSave(values, "ARCHIVED")}
+            onClick={() => handleSave("ARCHIVED")}
           >
             Archive
           </FormButton>

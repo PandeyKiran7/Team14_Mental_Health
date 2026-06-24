@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { formatBlogCategory, type Blog } from "@/types/blog";
 
@@ -7,20 +10,24 @@ type BlogCardProps = {
 };
 
 export default function BlogCard({ blog, href }: BlogCardProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(blog.coverImage) && !imageFailed;
+
   return (
     <Link
       href={href}
       className="group flex h-full flex-col overflow-hidden rounded-xl border border-teal-100 bg-white transition hover:border-teal-200"
     >
-      {blog.coverImage ? (
+      {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={blog.coverImage}
+          src={blog.coverImage!}
           alt=""
           className="h-44 w-full object-cover"
+          onError={() => setImageFailed(true)}
         />
       ) : (
-        <div className="flex h-44 items-center justify-center bg-teal-50 text-sm text-teal-700">
+        <div className="flex h-44 items-center justify-center bg-teal-50 px-4 text-center text-sm font-medium text-teal-700">
           {formatBlogCategory(blog.category)}
         </div>
       )}
