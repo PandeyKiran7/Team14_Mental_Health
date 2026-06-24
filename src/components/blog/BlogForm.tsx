@@ -33,6 +33,7 @@ const emptyValues: BlogFormValues = {
   category: "DIABETES_MANAGEMENT",
   tags: "",
   status: "DRAFT",
+  coverImage: "",
 };
 
 export default function BlogForm({
@@ -59,6 +60,7 @@ export default function BlogForm({
       category: initial.category,
       tags: initial.tags?.join(", ") ?? "",
       status: initial.status,
+      coverImage: initial.coverImage ?? "",
     });
     setSlugEdited(true);
   }, [initial]);
@@ -134,6 +136,15 @@ export default function BlogForm({
         label="Tags (comma-separated)"
         value={values.tags}
         onChange={(event) => updateField("tags", event.target.value)}
+      />
+
+      <FormInput
+        name="coverImage"
+        label="Cover image URL"
+        type="url"
+        value={values.coverImage}
+        onChange={(event) => updateField("coverImage", event.target.value)}
+        hint="Optional. Paste a direct image URL (https://…)."
       />
 
       {error && <p className="text-sm text-red-600">{error}</p>}

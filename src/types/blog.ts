@@ -49,6 +49,7 @@ export type BlogFormValues = {
   category: BlogCategory;
   tags: string;
   status: BlogStatus;
+  coverImage: string;
 };
 
 export function normalizeBlogs(body: unknown): Blog[] {

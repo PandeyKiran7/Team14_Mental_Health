@@ -15,8 +15,8 @@ import {
 import { apiPostCall } from "@/helper/apiService";
 import { extractApiEntity } from "@/helper/apiResponse";
 import { setAccessToken, setStoredUser } from "@/lib/auth";
-import { doctorHasProfile, getDoctorHomePath } from "@/lib/doctorProfile";
-import { getPatientHomePath, patientHasProfile } from "@/lib/patientProfile";
+import { getDoctorHomePath } from "@/lib/doctorProfile";
+import { getPatientHomePath } from "@/lib/patientProfile";
 
 type LoginUser = {
   userId: number;
@@ -85,11 +85,9 @@ export default function LoginPage() {
 
       const role = payload.user.role?.toLowerCase();
       if (role === "patient") {
-        const hasProfile = await patientHasProfile(payload.accessToken);
-        router.push(getPatientHomePath(hasProfile));
+        router.push(getPatientHomePath());
       } else if (role === "doctor") {
-        const hasProfile = await doctorHasProfile(payload.accessToken);
-        router.push(getDoctorHomePath(hasProfile));
+        router.push(getDoctorHomePath());
       } else if (role === "admin") {
         router.push("/admin/dashboard");
       } else if (role === "internal_manager") {

@@ -29,10 +29,13 @@ export default function UserDetailModal({ userId, onClose }: UserDetailModalProp
       setLoading(true);
       setError(null);
 
+      const id = userId;
+      if (!id) return;
+
       try {
         const response = await apiGetCall({
           endpoint: "user_by_id",
-          pathParams: { userId },
+          pathParams: { userId: id },
           token: getAccessToken() ?? undefined,
         });
 
@@ -56,6 +59,7 @@ export default function UserDetailModal({ userId, onClose }: UserDetailModalProp
 
   const fields = user
     ? [
+        { label: "User ID", value: String(user.userId) },
         { label: "Name", value: `${user.firstName} ${user.lastName}` },
         { label: "Email", value: user.email },
         { label: "Role", value: user.role },

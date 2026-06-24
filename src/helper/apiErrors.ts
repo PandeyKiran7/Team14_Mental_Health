@@ -119,6 +119,38 @@ export function resolveApiError(
   return getApiErrorMessage(response.data, fallback, response.status);
 }
 
+const ADMIN_FORBIDDEN_HINT =
+  "Your admin account is not allowed to call this API. Ask the backend team to enable ADMIN on this route, or use an Internal Manager account.";
+
+export function resolveAdminMutationError(
+  response: { status: number; data: unknown },
+  fallback: string,
+): string {
+  if (response.status === 403) {
+    const base = resolveApiError(response, fallback);
+    if (/not authorized|permission|forbidden/i.test(base)) {
+      return ADMIN_FORBIDDEN_HINT;
+    }
+    return base;
+  }
+
+  if (response.status === 409) {
+    return resolveApiError(
+      response,
+      "This user has linked bookings or records and cannot be removed.",
+    );
+  }
+
+  if (response.status >= 500) {
+    return resolveApiError(
+      response,
+      "Server error. The user may have linked records that block this action.",
+    );
+  }
+
+  return resolveApiError(response, fallback);
+}
+
 export function getNetworkErrorMessage(
   error: unknown,
   fallback = "Cannot reach the server. Make sure the backend is running on port 4000.",

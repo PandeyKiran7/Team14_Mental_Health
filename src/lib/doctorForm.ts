@@ -1,16 +1,12 @@
-export type DoctorProfessionalData = {
-  licenseNumber: string;
-  qualification: string;
-  specialization: string;
-  yearsOfExperience: number;
-  biography: string;
-  consultationFee: number;
-  availableFrom: string;
-  availableTo: string;
-  availableDays: string[];
-};
+import type {
+  AddDoctorProfessionalProfilePayload,
+  DoctorProfessionalDetails,
+  WeekDay,
+} from "@/types/doctorProfessional";
 
-export const weekDays = [
+export type { AddDoctorProfessionalProfilePayload, DoctorProfessionalDetails, WeekDay };
+
+export const weekDays: WeekDay[] = [
   "SUNDAY",
   "MONDAY",
   "TUESDAY",
@@ -18,7 +14,7 @@ export const weekDays = [
   "THURSDAY",
   "FRIDAY",
   "SATURDAY",
-] as const;
+];
 
 export const emptyDoctorProfessionalForm = {
   licenseNumber: "",
@@ -29,10 +25,12 @@ export const emptyDoctorProfessionalForm = {
   consultationFee: "",
   availableFrom: "09:00",
   availableTo: "17:00",
-  availableDays: [] as string[],
+  availableDays: [] as WeekDay[],
 };
 
-export function doctorDataToForm(data: DoctorProfessionalData) {
+export type DoctorProfessionalFormValues = typeof emptyDoctorProfessionalForm;
+
+export function doctorDataToForm(data: DoctorProfessionalDetails) {
   return {
     licenseNumber: data.licenseNumber ?? "",
     qualification: data.qualification ?? "",
@@ -46,7 +44,9 @@ export function doctorDataToForm(data: DoctorProfessionalData) {
   };
 }
 
-export function formToDoctorPayload(form: typeof emptyDoctorProfessionalForm) {
+export function formToDoctorPayload(
+  form: DoctorProfessionalFormValues,
+): AddDoctorProfessionalProfilePayload {
   return {
     licenseNumber: form.licenseNumber.trim(),
     qualification: form.qualification.trim(),
@@ -58,4 +58,8 @@ export function formToDoctorPayload(form: typeof emptyDoctorProfessionalForm) {
     availableTo: form.availableTo.slice(0, 5),
     availableDays: form.availableDays,
   };
+}
+
+export function formatWeekDay(day: string): string {
+  return day.charAt(0) + day.slice(1).toLowerCase();
 }

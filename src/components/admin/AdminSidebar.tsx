@@ -35,7 +35,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/admin/content-managers",
-    label: "Content managers",
+    label: "Internal managers",
     icon: BookOpenIcon,
   },
   {

@@ -18,24 +18,21 @@ function resolveUrl(data: Pick<ApiCallData, "endpoint" | "pathParams">) {
   return resolveApiUrl(data.endpoint, data.pathParams);
 }
 
+/** Treat 4xx/5xx as normal responses — avoids AxiosError console noise. */
+const axiosConfig = (token?: string) => ({
+  headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
+  validateStatus: () => true,
+});
+
 export const apiFormPostCall = async (
   endpoint: keyof typeof API_ENDPOINTS,
   formData: FormData,
   token?: string,
 ) => {
   const url = resolveApiUrl(endpoint);
+  const authToken = token ?? getAccessToken() ?? undefined;
 
-  try {
-    return await axios.post(url, formData, {
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
-    });
-  } catch (error) {
-    console.error("apiFormPostCall error:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      return error.response;
-    }
-    throw error;
-  }
+  return axios.post(url, formData, axiosConfig(authToken));
 };
 
 export const apiPostCall = async (data: ApiCallData) => {
@@ -45,18 +42,9 @@ export const apiPostCall = async (data: ApiCallData) => {
 
   const { endpoint, token, pathParams, ...body } = data;
   const url = resolveUrl({ endpoint, pathParams });
+  const authToken = token ?? getAccessToken() ?? undefined;
 
-  try {
-    return await axios.post(url, body, {
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
-    });
-  } catch (error) {
-    console.error("apiPostCall error:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      return error.response;
-    }
-    throw error;
-  }
+  return axios.post(url, body, axiosConfig(authToken));
 };
 
 export const apiGetCall = async (data: ApiCallData) => {
@@ -66,19 +54,12 @@ export const apiGetCall = async (data: ApiCallData) => {
 
   const { endpoint, token, pathParams, ...params } = data;
   const url = resolveUrl({ endpoint, pathParams });
+  const authToken = token ?? getAccessToken() ?? undefined;
 
-  try {
-    return await axios.get(url, {
-      params,
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
-    });
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      return error.response;
-    }
-    console.error("apiGetCall error:", error);
-    throw error;
-  }
+  return axios.get(url, {
+    ...axiosConfig(authToken),
+    params,
+  });
 };
 
 export const apiPatchCall = async (data: ApiCallData) => {
@@ -88,18 +69,9 @@ export const apiPatchCall = async (data: ApiCallData) => {
 
   const { endpoint, token, pathParams, ...body } = data;
   const url = resolveUrl({ endpoint, pathParams });
+  const authToken = token ?? getAccessToken() ?? undefined;
 
-  try {
-    return await axios.patch(url, body, {
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
-    });
-  } catch (error) {
-    console.error("apiPatchCall error:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      return error.response;
-    }
-    throw error;
-  }
+  return axios.patch(url, body, axiosConfig(authToken));
 };
 
 export const apiDownloadCall = async (
@@ -113,9 +85,8 @@ export const apiDownloadCall = async (
 
   try {
     const response = await axios.get(url, {
-      headers: getAuthHeaders(authToken),
+      ...axiosConfig(authToken),
       responseType: "blob",
-      validateStatus: () => true,
     });
 
     const blob = response.data as Blob;
@@ -154,7 +125,6 @@ export const apiDownloadCall = async (
       return { ok: false, message };
     }
 
-    console.error("apiDownloadCall error:", error);
     return { ok: false, message: "Cannot download file." };
   }
 };
@@ -166,16 +136,7 @@ export const apiDeleteCall = async (data: ApiCallData): Promise<AxiosResponse> =
 
   const { endpoint, token, pathParams } = data;
   const url = resolveUrl({ endpoint, pathParams });
+  const authToken = token ?? getAccessToken() ?? undefined;
 
-  try {
-    return await axios.delete(url, {
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
-    });
-  } catch (error) {
-    console.error("apiDeleteCall error:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      return error.response;
-    }
-    throw error;
-  }
+  return axios.delete(url, axiosConfig(authToken));
 };

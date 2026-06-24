@@ -71,6 +71,7 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
 
   function updateField(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -102,6 +103,9 @@ export default function RegisterPage() {
       formData.append("role", "PATIENT");
       if (form.address.trim()) {
         formData.append("address", form.address.trim());
+      }
+      if (profileImage) {
+        formData.append("userProfile", profileImage);
       }
 
       const response = await apiFormPostCall("register", formData);
@@ -230,6 +234,20 @@ export default function RegisterPage() {
             value={form.dateOfBirth}
             onChange={(e) => updateField("dateOfBirth", e.target.value)}
             required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="profileImage" className="mb-1 block text-sm font-medium text-zinc-700">
+            Profile picture
+          </label>
+          <input
+            id="profileImage"
+            name="profileImage"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setProfileImage(e.target.files?.[0] ?? null)}
+            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-teal-800"
           />
         </div>
 

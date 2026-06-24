@@ -5,6 +5,7 @@ import { XIcon } from "@phosphor-icons/react";
 import {
   getNetworkErrorMessage,
   isApiSuccess,
+  resolveAdminMutationError,
   resolveApiError,
 } from "@/helper/apiErrors";
 import { apiGetCall, apiPatchCall } from "@/helper/apiService";
@@ -106,7 +107,7 @@ export default function AdminUserEditModal({
 
     try {
       const response = await apiPatchCall({
-        endpoint: "admin_update_user",
+        endpoint: "user_status",
         pathParams: { userId: user.userId },
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
@@ -118,7 +119,7 @@ export default function AdminUserEditModal({
       });
 
       if (!isApiSuccess(response.status)) {
-        setError(resolveApiError(response, "Failed to update user."));
+        setError(resolveAdminMutationError(response, "Failed to update user."));
         return;
       }
 
@@ -144,7 +145,7 @@ export default function AdminUserEditModal({
           <div>
             <h2 className="text-lg font-semibold text-teal-800">Edit user</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              {user.firstName} {user.lastName} · {user.email}
+              User ID: {user.userId} · {user.firstName} {user.lastName} · {user.email}
             </p>
           </div>
           <button

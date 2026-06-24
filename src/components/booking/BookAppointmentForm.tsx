@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getNetworkErrorMessage,
   isApiSuccess,
@@ -17,7 +17,7 @@ type BookAppointmentFormProps = {
 };
 
 export default function BookAppointmentForm({ onBooked }: BookAppointmentFormProps) {
-  const [doctorId, setDoctorId] = useState("");
+  const [doctorUserId, setDoctorUserId] = useState("");
   const [bookingDate, setBookingDate] = useState("");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("09:30");
@@ -27,6 +27,11 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [doctors, setDoctors] = useState<BookableDoctor[]>([]);
+
+  const selectedDoctor = useMemo(
+    () => doctors.find((doctor) => String(doctor.userId) === doctorUserId),
+    [doctors, doctorUserId],
+  );
 
   useEffect(() => {
     async function loadDoctors() {
@@ -42,6 +47,11 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
 
       const result = await loadBookableDoctors(token);
       setDoctors(result.doctors);
+      console.log("[Team14] Doctor dropdown — BookAppointmentForm state:", {
+        count: result.doctors.length,
+        options: result.doctors,
+        error: result.error,
+      });
       if (result.error) {
         setError(result.error);
       }
@@ -64,14 +74,33 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
       return;
     }
 
+    if (!selectedDoctor) {
+      setError("Please select a doctor.");
+      setSaving(false);
+      return;
+    }
+
     try {
+      const pathDoctorId = selectedDoctor.bookingDoctorId;
+      const payload = {
+        bookingDate,
+        startTime: startTime.slice(0, 5),
+        endTime: endTime.slice(0, 5),
+        notes: notes.trim() || undefined,
+      };
+
+      if (process.env.NODE_ENV === "development") {
+        console.info("[Team14] POST book-appointment", {
+          doctorUserId: selectedDoctor.userId,
+          pathDoctorId,
+          body: payload,
+        });
+      }
+
       const response = await apiPostCall({
         endpoint: "book_appointment",
-        pathParams: { doctorId: Number(doctorId) },
-        bookingDate,
-        startTime,
-        endTime,
-        notes: notes || undefined,
+        pathParams: { doctorId: pathDoctorId },
+        ...payload,
         token,
       });
 
@@ -79,7 +108,7 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
         const apiError = resolveApiError(response, "Failed to book appointment.");
         if (response.status === 404 && apiError.toLowerCase().includes("doctor")) {
           setError(
-            "Doctor not found. They may not have completed their professional profile yet.",
+            `Doctor not found (User ID ${selectedDoctor.userId}). They may not have completed their professional profile yet.`,
           );
         } else {
           setError(apiError);
@@ -88,7 +117,7 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
       }
 
       setMessage("Appointment booked successfully. Waiting for doctor approval.");
-      setDoctorId("");
+      setDoctorUserId("");
       setNotes("");
       onBooked();
     } catch (submitError) {
@@ -101,20 +130,22 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
   return (
     <div className="rounded-xl border border-teal-100 bg-white p-6">
       <h2 className="text-lg font-semibold text-teal-800">Book appointment</h2>
-      <p className="mt-1 text-sm text-zinc-500">
-        Select a doctor from the list below to book your appointment.
-      </p>
 
       <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-4">
         <div>
-          <label htmlFor="doctorId" className="mb-1 block text-sm font-medium text-zinc-700">
+          <label htmlFor="doctorUserId" className="mb-1 block text-sm font-medium text-zinc-700">
             Doctor *
           </label>
           <Select
-            id="doctorId"
+            id="doctorUserId"
             required
-            value={doctorId}
-            onChange={(e) => setDoctorId(e.target.value)}
+            value={doctorUserId}
+            onChange={(e) => {
+              const next = e.target.value;
+              setDoctorUserId(next);
+              const picked = doctors.find((d) => String(d.userId) === next);
+              console.log("[Team14] Doctor dropdown — selected:", picked ?? null);
+            }}
             disabled={loadingDoctors || doctors.length === 0}
           >
             <option value="">
@@ -125,12 +156,17 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
                   : "Select a doctor"}
             </option>
             {doctors.map((doctor) => (
-              <option key={doctor.profileId} value={doctor.profileId}>
-                {doctor.name}
+              <option key={doctor.userId} value={String(doctor.userId)}>
+                {doctor.name} (User ID: {doctor.userId})
                 {doctor.specialization ? ` — ${doctor.specialization}` : ""}
               </option>
             ))}
           </Select>
+          {selectedDoctor && (
+            <p className="mt-1.5 text-xs text-zinc-500">
+              Selected doctor User ID: <span className="font-mono">{selectedDoctor.userId}</span>
+            </p>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">

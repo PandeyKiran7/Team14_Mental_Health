@@ -22,7 +22,7 @@ function getToken(): string | undefined {
 }
 
 function buildPayload(values: BlogFormValues) {
-  return {
+  const payload: Record<string, unknown> = {
     title: values.title.trim(),
     slug: values.slug.trim(),
     summary: values.summary.trim(),
@@ -31,6 +31,13 @@ function buildPayload(values: BlogFormValues) {
     tags: splitCommaList(values.tags),
     status: values.status,
   };
+
+  const coverImage = values.coverImage?.trim();
+  if (coverImage) {
+    payload.coverImage = coverImage;
+  }
+
+  return payload;
 }
 
 const LIST_ENDPOINT = {
@@ -43,20 +50,38 @@ export type BlogListStatus = keyof typeof LIST_ENDPOINT;
 
 export async function fetchBlogs(
   status: BlogListStatus,
+  token?: string,
 ): Promise<ActionResult<Blog[]>> {
+  const authToken = token ?? getToken();
   const response = await apiGetCall({
     endpoint: LIST_ENDPOINT[status],
-    token: getToken(),
+    token: authToken,
   });
 
   if (!isApiSuccess(response.status)) {
-    return {
-      ok: false,
-      message: resolveApiError(response, "Failed to load blogs."),
-    };
+    const message = resolveApiError(response, "Failed to load blogs.");
+    if (response.status === 401 && !authToken) {
+      return {
+        ok: false,
+        message: "Please log in to view health articles.",
+      };
+    }
+    return { ok: false, message };
   }
 
   return { ok: true, data: normalizeBlogs(response.data) };
+}
+
+async function fetchBlogFromLists(blogId: number): Promise<Blog | null> {
+  for (const status of ["draft", "published", "archived"] as const) {
+    const result = await fetchBlogs(status);
+    if (!result.ok) continue;
+
+    const match = result.data.find((blog) => blog.blogId === blogId);
+    if (match) return match;
+  }
+
+  return null;
 }
 
 export async function fetchBlogById(blogId: number): Promise<ActionResult<Blog>> {
@@ -66,6 +91,18 @@ export async function fetchBlogById(blogId: number): Promise<ActionResult<Blog>>
     token: getToken(),
   });
 
+  if (isApiSuccess(response.status)) {
+    const blog = normalizeBlog(response.data);
+    if (blog) {
+      return { ok: true, data: blog };
+    }
+  }
+
+  const fallback = await fetchBlogFromLists(blogId);
+  if (fallback) {
+    return { ok: true, data: fallback };
+  }
+
   if (!isApiSuccess(response.status)) {
     return {
       ok: false,
@@ -73,12 +110,7 @@ export async function fetchBlogById(blogId: number): Promise<ActionResult<Blog>>
     };
   }
 
-  const blog = normalizeBlog(response.data);
-  if (!blog) {
-    return { ok: false, message: "Blog not found." };
-  }
-
-  return { ok: true, data: blog };
+  return { ok: false, message: "Blog not found." };
 }
 
 export async function createBlog(values: BlogFormValues): Promise<ActionResult<Blog>> {
@@ -116,6 +148,10 @@ export async function updateBlog(
   if (values.category !== undefined) payload.category = values.category;
   if (values.tags !== undefined) payload.tags = splitCommaList(values.tags);
   if (values.status !== undefined) payload.status = values.status;
+  if (values.coverImage !== undefined) {
+    const coverImage = values.coverImage.trim();
+    if (coverImage) payload.coverImage = coverImage;
+  }
 
   const response = await apiPatchCall({
     endpoint: "blog_by_id",

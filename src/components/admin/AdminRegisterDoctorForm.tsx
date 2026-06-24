@@ -42,6 +42,7 @@ export default function AdminRegisterDoctorForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
 
   function updateAccount(field: keyof typeof account, value: string) {
     setAccount((prev) => ({ ...prev, [field]: value }));
@@ -88,6 +89,7 @@ export default function AdminRegisterDoctorForm() {
       formData.append("dateOfBirth", account.dateOfBirth);
       formData.append("role", "DOCTOR");
       if (account.address.trim()) formData.append("address", account.address.trim());
+      if (profileImage) formData.append("userProfile", profileImage);
 
       const registerRes = await apiFormPostCall("register", formData, token);
       if (!isApiSuccess(registerRes.status)) {
@@ -110,15 +112,8 @@ export default function AdminRegisterDoctorForm() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-teal-800">Register new doctor</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Admin creates the doctor login account. The doctor adds their professional
-            profile after first login.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-end">
         <Link
           href="/admin/doctors"
           className="text-sm font-medium text-teal-700 underline hover:text-teal-900"
@@ -126,11 +121,6 @@ export default function AdminRegisterDoctorForm() {
           Back to doctors
         </Link>
       </div>
-
-      <ApiMessage
-        variant="info"
-        message="After login, the doctor completes license, specialization, fees, and availability on their own doctor dashboard."
-      />
 
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6">
         <section className="rounded-xl border border-teal-100 bg-white p-6">
@@ -202,6 +192,18 @@ export default function AdminRegisterDoctorForm() {
               value={account.address}
               onChange={(e) => updateAccount("address", e.target.value)}
             />
+            <div className="sm:col-span-2">
+              <label htmlFor="doctorProfileImage" className="mb-1 block text-sm font-medium text-zinc-700">
+                Profile picture
+              </label>
+              <input
+                id="doctorProfileImage"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setProfileImage(e.target.files?.[0] ?? null)}
+                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-teal-800"
+              />
+            </div>
           </div>
         </section>
 

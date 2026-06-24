@@ -37,6 +37,7 @@ export default function AdminRegisterContentManagerForm() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
 
   function updateAccount(field: keyof typeof account, value: string) {
     setAccount((prev) => ({ ...prev, [field]: value }));
@@ -85,10 +86,13 @@ export default function AdminRegisterContentManagerForm() {
       if (account.address.trim()) {
         formData.append("address", account.address.trim());
       }
+      if (profileImage) {
+        formData.append("userProfile", profileImage);
+      }
 
       const response = await apiFormPostCall("register", formData, token);
       if (response.status !== 201 && response.status !== API_CONSTANTS.success) {
-        setError(getApiErrorMessage(response.data, "Failed to create content manager account."));
+        setError(getApiErrorMessage(response.data, "Failed to create internal manager account."));
         return;
       }
 
@@ -101,19 +105,13 @@ export default function AdminRegisterContentManagerForm() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-teal-800">Register content manager</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Admin creates the content manager account. They can log in to manage site content.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-end">
         <Link
           href="/admin/content-managers"
           className="text-sm font-medium text-teal-700 underline hover:text-teal-900"
         >
-          Back to content managers
+          Back to internal managers
         </Link>
       </div>
 
@@ -155,7 +153,7 @@ export default function AdminRegisterContentManagerForm() {
               value={account.password}
               onChange={(e) => updateAccount("password", e.target.value)}
               required
-              hint="Share this with the content manager for first login. Example: Test@1234"
+              hint="Share this with the internal manager for first login. Example: Test@1234"
             />
             <FormInput
               name="mobileNumber"
@@ -187,13 +185,25 @@ export default function AdminRegisterContentManagerForm() {
               value={account.address}
               onChange={(e) => updateAccount("address", e.target.value)}
             />
+            <div className="sm:col-span-2">
+              <label htmlFor="managerProfileImage" className="mb-1 block text-sm font-medium text-zinc-700">
+                Profile picture
+              </label>
+              <input
+                id="managerProfileImage"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setProfileImage(e.target.files?.[0] ?? null)}
+                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-teal-800"
+              />
+            </div>
           </div>
         </section>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <FormButton type="submit" disabled={loading}>
-          {loading ? "Creating account…" : "Register content manager"}
+          {loading ? "Creating account…" : "Register internal manager"}
         </FormButton>
       </form>
     </div>

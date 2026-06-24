@@ -1,33 +1,109 @@
 "use client";
 
 import Link from "next/link";
-import {
-  CalendarIcon,
-  ClockIcon,
-  CurrencyCircleDollarIcon,
-  StethoscopeIcon,
-  UserCircleIcon,
-} from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import DoctorPendingAppointments from "@/components/doctor/DoctorPendingAppointments";
 import PatientMedicalLookup from "@/components/doctor/PatientMedicalLookup";
 import DashboardHero, { getTimeGreeting } from "@/components/dashboard/DashboardHero";
-import QuickActionCard from "@/components/dashboard/QuickActionCard";
-import StatCard from "@/components/admin/StatCard";
-import { API_CONSTANTS } from "@/constants/staticConstant";
-import { extractApiEntity } from "@/helper/apiResponse";
-import { apiGetCall } from "@/helper/apiService";
-import { getAccessToken, getStoredUser } from "@/lib/auth";
-import { loadMyBookings } from "@/lib/myBookings";
+import ApiMessage from "@/components/ui/ApiMessage";
+import {
+  fetchDoctorProfessionalDetails,
+  getCachedDoctorProfessionalDetails,
+} from "@/lib/doctorProfessionalApi";
+import { formatWeekDay } from "@/lib/doctorForm";
+import { getStoredUser } from "@/lib/auth";
+import type { DoctorProfessionalDetails } from "@/types/doctorProfessional";
 
-type DoctorData = {
-  specialization?: string;
-  qualification?: string;
-  consultationFee?: number;
-  availableFrom?: string;
-  availableTo?: string;
-  availableDays?: string[];
-};
+function DoctorProfileSummary({
+  profile,
+  error,
+}: {
+  profile: DoctorProfessionalDetails | null;
+  error: string | null;
+}) {
+  if (error) {
+    return <ApiMessage message={error} variant="error" />;
+  }
+
+  if (!profile) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+        <h2 className="text-lg font-semibold text-amber-900">Professional profile required</h2>
+        <p className="mt-2 text-sm text-amber-800">
+          Add your license, specialization, and availability via{" "}
+          <code className="rounded bg-white/80 px-1">POST /api/v1/doctor-data</code> before
+          patients can book with you.
+        </p>
+        <Link
+          href="/doctor/profile"
+          className="mt-4 inline-block rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+        >
+          Complete professional profile
+        </Link>
+      </div>
+    );
+  }
+
+  const availableDays =
+    profile.availableDays?.map(formatWeekDay).join(", ") ?? "—";
+
+  return (
+    <section className="rounded-xl border border-teal-100 bg-white p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-teal-800">Professional profile</h2>
+        <Link
+          href="/doctor/profile"
+          className="text-sm font-medium text-teal-600 hover:text-teal-700 hover:underline"
+        >
+          Edit profile
+        </Link>
+      </div>
+
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {[
+          { label: "License", value: profile.licenseNumber },
+          { label: "Qualification", value: profile.qualification },
+          { label: "Specialization", value: profile.specialization },
+          {
+            label: "Experience",
+            value:
+              profile.yearsOfExperience != null
+                ? `${profile.yearsOfExperience} year(s)`
+                : undefined,
+          },
+          {
+            label: "Consultation fee",
+            value:
+              profile.consultationFee != null ? `Rs. ${profile.consultationFee}` : undefined,
+          },
+          {
+            label: "Working hours",
+            value:
+              profile.availableFrom && profile.availableTo
+                ? `${profile.availableFrom} – ${profile.availableTo}`
+                : undefined,
+          },
+          { label: "Available days", value: availableDays },
+          {
+            label: "Rating",
+            value: profile.averageRating != null ? String(profile.averageRating) : undefined,
+          },
+        ].map((item) => (
+          <div key={item.label} className="rounded-lg bg-slate-50 px-4 py-3">
+            <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              {item.label}
+            </dt>
+            <dd className="mt-1 text-sm font-semibold text-zinc-800">{item.value ?? "—"}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {profile.biography && (
+        <p className="mt-4 text-sm text-zinc-600">{profile.biography}</p>
+      )}
+    </section>
+  );
+}
 
 export default function DoctorDashboardHome() {
   const user = getStoredUser();
@@ -35,149 +111,48 @@ export default function DoctorDashboardHome() {
     ? `Dr. ${user.firstName} ${user.lastName ?? ""}`.trim()
     : "Doctor";
 
-  const [profile, setProfile] = useState<DoctorData | null>(null);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [confirmedCount, setConfirmedCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const initialCache = getCachedDoctorProfessionalDetails();
+  const [profile, setProfile] = useState<DoctorProfessionalDetails | null>(
+    initialCache?.ok ? initialCache.data : null,
+  );
+  const [profileError, setProfileError] = useState<string | null>(
+    initialCache && !initialCache.ok ? initialCache.message : null,
+  );
+  const [loading, setLoading] = useState(!initialCache);
 
   useEffect(() => {
-    async function loadDashboard() {
-      const token = getAccessToken();
-      if (!token) {
-        setLoading(false);
-        return;
+    if (initialCache) return;
+
+    async function loadProfile() {
+      const result = await fetchDoctorProfessionalDetails();
+
+      if (!result.ok) {
+        setProfileError(result.message);
+        setProfile(null);
+      } else {
+        setProfileError(null);
+        setProfile(result.data);
       }
 
-      try {
-        const [profileRes, bookings] = await Promise.all([
-          apiGetCall({ endpoint: "doctor_data", token }),
-          loadMyBookings(token),
-        ]);
-
-        if (profileRes.status === API_CONSTANTS.success) {
-          setProfile(extractApiEntity<DoctorData>(profileRes.data, "licenseNumber"));
-        }
-
-        setPendingCount(bookings.filter((b) => b.status === "PENDING").length);
-        setConfirmedCount(bookings.filter((b) => b.status === "CONFIRMED").length);
-      } finally {
-        setLoading(false);
-      }
+      setLoading(false);
     }
 
-    void loadDashboard();
-  }, []);
+    void loadProfile();
+  }, [initialCache]);
 
   if (loading) {
-    return <p className="text-sm text-zinc-500">Loading overview…</p>;
+    return <p className="text-sm text-zinc-500">Loading dashboard…</p>;
   }
 
-  const availableDays =
-    profile?.availableDays
-      ?.map((day) => day.charAt(0) + day.slice(1).toLowerCase())
-      .join(", ") ?? "—";
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <DashboardHero
         greeting={getTimeGreeting()}
         name={displayName}
-        description="Review appointment requests, manage your schedule, and access patient medical records from your practice dashboard."
+        description="Manage your profile, review appointments, and view patient medical records."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Specialization"
-          value={profile?.specialization ?? "—"}
-          icon={StethoscopeIcon}
-          accent="teal"
-        />
-        <StatCard
-          label="Consultation fee"
-          value={profile?.consultationFee != null ? `Rs. ${profile.consultationFee}` : "—"}
-          icon={CurrencyCircleDollarIcon}
-          accent="emerald"
-        />
-        <StatCard
-          label="Pending requests"
-          value={pendingCount}
-          icon={CalendarIcon}
-          accent="amber"
-        />
-        <StatCard
-          label="Confirmed visits"
-          value={confirmedCount}
-          icon={ClockIcon}
-          accent="sky"
-        />
-      </div>
-
-      <section>
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500">
-          Quick actions
-        </h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          <QuickActionCard
-            href="/doctor/bookings"
-            title="Manage appointments"
-            description={
-              pendingCount > 0
-                ? `${pendingCount} patient request(s) need your response`
-                : "View and manage all appointment bookings"
-            }
-            icon={CalendarIcon}
-          />
-          <QuickActionCard
-            href="/doctor/profile"
-            title="Professional profile"
-            description="Update availability, fees, and qualifications"
-            icon={UserCircleIcon}
-          />
-        </div>
-      </section>
-
-      {profile && (
-        <section className="rounded-xl border border-teal-100 bg-white p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-lg font-semibold text-teal-800">Practice summary</h3>
-            <Link
-              href="/doctor/profile"
-              className="text-sm font-medium text-teal-600 hover:text-teal-700 hover:underline"
-            >
-              Edit profile →
-            </Link>
-          </div>
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { label: "Qualification", value: profile.qualification },
-              {
-                label: "Working hours",
-                value:
-                  profile.availableFrom && profile.availableTo
-                    ? `${profile.availableFrom} – ${profile.availableTo}`
-                    : undefined,
-              },
-              { label: "Available days", value: availableDays },
-              {
-                label: "Weekly schedule",
-                value: profile.availableDays?.length
-                  ? `${profile.availableDays.length} day(s)`
-                  : undefined,
-              },
-            ].map((item) => (
-              <div key={item.label} className="rounded-lg bg-slate-50 px-4 py-3">
-                <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  {item.label}
-                </dt>
-                <dd className="mt-1 text-sm font-semibold text-zinc-800">
-                  {item.value ?? "—"}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      )}
-
+      <DoctorProfileSummary profile={profile} error={profileError} />
       <DoctorPendingAppointments />
       <PatientMedicalLookup />
     </div>

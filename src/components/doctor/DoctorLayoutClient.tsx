@@ -3,24 +3,17 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import DashboardShell from "@/components/layout/DashboardShell";
+import DoctorProfessionalSetupModal from "@/components/doctor/DoctorProfessionalSetupModal";
 import ApiMessage from "@/components/ui/ApiMessage";
 import { getDoctorProfileStatus } from "@/lib/doctorProfile";
 import { getAccessToken, getStoredUser } from "@/lib/auth";
 import { handleSessionExpired } from "@/lib/session";
 
 const PAGE_META: Record<string, { title?: string; subtitle?: string }> = {
-  "/doctor/dashboard": {},
-  "/doctor/bookings": {
-    title: "Appointments",
-    subtitle: "Review requests, approve bookings, and add prescriptions",
-  },
-  "/doctor/profile": {
-    title: "My Profile",
-    subtitle: "Your account and professional details",
-  },
+  "/doctor/dashboard": { title: "Overview" },
+  "/doctor/bookings": { title: "Appointments" },
+  "/doctor/profile": { title: "My Profile" },
 };
-
-const PROFILE_OPTIONAL_PATHS = ["/doctor/profile"];
 
 export default function DoctorLayoutClient({
   children,
@@ -30,13 +23,13 @@ export default function DoctorLayoutClient({
   const pathname = usePathname();
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [profileComplete, setProfileComplete] = useState(true);
   const [guardError, setGuardError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function verifyAccess() {
-      setReady(false);
       setGuardError(null);
 
       const token = getAccessToken();
@@ -52,15 +45,6 @@ export default function DoctorLayoutClient({
         return;
       }
 
-      const profileOptional = PROFILE_OPTIONAL_PATHS.some(
-        (path) => pathname === path || pathname.startsWith(`${path}/`),
-      );
-
-      if (profileOptional) {
-        if (!cancelled) setReady(true);
-        return;
-      }
-
       const profileStatus = await getDoctorProfileStatus(token);
 
       if (cancelled) return;
@@ -70,19 +54,16 @@ export default function DoctorLayoutClient({
         return;
       }
 
-      if (profileStatus === "missing") {
-        router.replace("/doctor/profile");
-        return;
-      }
-
       if (profileStatus === "error") {
         setGuardError(
           "Cannot verify your doctor profile. Make sure the backend is running, then refresh this page.",
         );
+        setProfileComplete(false);
         setReady(true);
         return;
       }
 
+      setProfileComplete(profileStatus === "complete");
       setReady(true);
     }
 
@@ -91,7 +72,15 @@ export default function DoctorLayoutClient({
     return () => {
       cancelled = true;
     };
-  }, [pathname, router]);
+  }, [router]);
+
+  async function handleProfileCompleted() {
+    const token = getAccessToken();
+    if (!token) return;
+
+    const profileStatus = await getDoctorProfileStatus(token);
+    setProfileComplete(profileStatus === "complete");
+  }
 
   const meta = PAGE_META[pathname] ?? {
     title: "Doctor",
@@ -116,8 +105,14 @@ export default function DoctorLayoutClient({
       title={meta.title ?? ""}
       subtitle={meta.subtitle}
     >
-      {guardError && <ApiMessage message={guardError} variant="info" className="mb-4" />}
+      {guardError && (
+        <ApiMessage message={guardError} variant="info" className="mb-4" />
+      )}
       {children}
+      <DoctorProfessionalSetupModal
+        open={!profileComplete && pathname !== "/doctor/profile"}
+        onComplete={() => void handleProfileCompleted()}
+      />
     </DashboardShell>
   );
 }

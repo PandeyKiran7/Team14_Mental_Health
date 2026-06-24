@@ -6,6 +6,7 @@ import { apiDeleteCall, apiGetCall } from "@/helper/apiService";
 import {
   getNetworkErrorMessage,
   isApiSuccess,
+  resolveAdminMutationError,
   resolveApiError,
 } from "@/helper/apiErrors";
 import { getAccessToken, getStoredUser } from "@/lib/auth";
@@ -13,6 +14,7 @@ import { normalizeUsers, type AdminUser } from "@/types/admin";
 import { cn } from "@/lib/utils";
 import AdminUserEditModal from "@/components/admin/AdminUserEditModal";
 import UserDetailModal from "@/components/admin/UserDetailModal";
+import UserStatusModal from "@/components/admin/UserStatusModal";
 import ApiMessage from "@/components/ui/ApiMessage";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
@@ -61,6 +63,7 @@ export default function UsersTable({
 
   const [viewUserId, setViewUserId] = useState<number | null>(null);
   const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
+  const [statusTarget, setStatusTarget] = useState<AdminUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -93,7 +96,9 @@ export default function UsersTable({
       });
 
       if (!isApiSuccess(response.status)) {
-        setDeleteError(resolveApiError(response, "Failed to delete user."));
+        setDeleteError(
+          resolveAdminMutationError(response, "Failed to delete user."),
+        );
         return;
       }
 
@@ -147,6 +152,7 @@ export default function UsersTable({
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-teal-100 bg-teal-50/60">
+                <th className="px-4 py-3 font-semibold text-teal-900">User ID</th>
                 <th className="px-4 py-3 font-semibold text-teal-900">Name</th>
                 <th className="px-4 py-3 font-semibold text-teal-900">Email</th>
                 <th className="px-4 py-3 font-semibold text-teal-900">Role</th>
@@ -160,6 +166,7 @@ export default function UsersTable({
                   key={user.userId}
                   className="border-b border-teal-50 last:border-0 hover:bg-slate-50/80"
                 >
+                  <td className="px-4 py-3 font-mono text-xs text-zinc-500">{user.userId}</td>
                   <td className="px-4 py-3 font-medium text-zinc-800">
                     {user.firstName} {user.lastName}
                   </td>
@@ -168,16 +175,19 @@ export default function UsersTable({
                     <RoleBadge role={user.role} />
                   </td>
                   <td className="px-4 py-3">
-                    <span
+                    <button
+                      type="button"
+                      title="Update status"
+                      onClick={() => setStatusTarget(user)}
                       className={cn(
-                        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+                        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium hover:opacity-80",
                         user.isActive === "ACTIVE"
                           ? "bg-green-100 text-green-700"
                           : "bg-zinc-100 text-zinc-500",
                       )}
                     >
                       {user.isActive}
-                    </span>
+                    </button>
                   </td>
                   <td className="px-4 py-3 text-zinc-500">
                     <div className="flex items-center gap-2">
@@ -227,6 +237,11 @@ export default function UsersTable({
       <AdminUserEditModal
         user={editTarget}
         onClose={() => setEditTarget(null)}
+        onUpdated={refresh}
+      />
+      <UserStatusModal
+        user={statusTarget}
+        onClose={() => setStatusTarget(null)}
         onUpdated={refresh}
       />
       <ConfirmDialog

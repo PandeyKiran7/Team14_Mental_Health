@@ -1,5 +1,4 @@
 import {
-  CalendarIcon,
   SquaresFourIcon,
   StethoscopeIcon,
   UserCircleIcon,
@@ -9,13 +8,8 @@ import type { DashboardNavItem } from "@/components/layout/DashboardSidebar";
 export const DOCTOR_NAV_ITEMS: DashboardNavItem[] = [
   {
     href: "/doctor/dashboard",
-    label: "Overview",
+    label: "Dashboard",
     icon: SquaresFourIcon,
-  },
-  {
-    href: "/doctor/bookings",
-    label: "Appointments",
-    icon: CalendarIcon,
   },
   {
     href: "/doctor/profile",

@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { XIcon } from "@phosphor-icons/react";
-import { API_CONSTANTS } from "@/constants/staticConstant";
-import { getApiErrorMessage } from "@/helper/apiErrors";
+import {
+  getNetworkErrorMessage,
+  isApiSuccess,
+  resolveAdminMutationError,
+  resolveApiError,
+} from "@/helper/apiErrors";
 import { apiPatchCall } from "@/helper/apiService";
 import { getAccessToken } from "@/lib/auth";
 import type { AdminUser } from "@/types/admin";
@@ -43,12 +47,9 @@ export default function UserStatusModal({
         token: getAccessToken() ?? undefined,
       });
 
-      if (response.status !== API_CONSTANTS.success) {
+      if (!isApiSuccess(response.status)) {
         setError(
-          getApiErrorMessage(
-            response.data,
-            "Failed to update status. Backend may require admin route fix.",
-          ),
+          resolveAdminMutationError(response, "Failed to update status."),
         );
         return;
       }
@@ -75,7 +76,7 @@ export default function UserStatusModal({
           <div>
             <h2 className="text-lg font-semibold text-teal-800">Update status</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              {user.firstName} {user.lastName}
+              User ID: {user.userId} · {user.firstName} {user.lastName}
             </p>
           </div>
           <button

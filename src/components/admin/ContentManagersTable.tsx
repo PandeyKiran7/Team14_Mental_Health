@@ -39,7 +39,7 @@ export default function ContentManagersTable() {
       });
 
       if (!isApiSuccess(response.status)) {
-        setError(resolveApiError(response, "Failed to load content managers."));
+        setError(resolveApiError(response, "Failed to load internal managers."));
         setUsers([]);
         return;
       }
@@ -77,7 +77,7 @@ export default function ContentManagersTable() {
   if (users.length === 0) {
     return (
       <div className="rounded-xl border border-teal-100 bg-white p-8 text-center">
-        <p className="text-sm text-zinc-500">No content managers registered yet.</p>
+        <p className="text-sm text-zinc-500">No internal managers registered yet.</p>
       </div>
     );
   }
@@ -89,6 +89,7 @@ export default function ContentManagersTable() {
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-teal-100 bg-teal-50/60">
+                <th className="px-4 py-3 font-semibold text-teal-900">User ID</th>
                 <th className="px-4 py-3 font-semibold text-teal-900">Name</th>
                 <th className="px-4 py-3 font-semibold text-teal-900">Email</th>
                 <th className="px-4 py-3 font-semibold text-teal-900">Role</th>
@@ -102,6 +103,7 @@ export default function ContentManagersTable() {
                   key={user.userId}
                   className="border-b border-teal-50 last:border-0 hover:bg-slate-50/80"
                 >
+                  <td className="px-4 py-3 font-mono text-xs text-zinc-500">{user.userId}</td>
                   <td className="px-4 py-3 font-medium text-zinc-800">
                     {user.firstName} {user.lastName}
                   </td>
@@ -113,7 +115,7 @@ export default function ContentManagersTable() {
                         ROLE_STYLES[user.role.toLowerCase()] ?? "bg-zinc-100 text-zinc-700",
                       )}
                     >
-                      Content manager
+                      Internal manager
                     </span>
                   </td>
                   <td className="px-4 py-3">

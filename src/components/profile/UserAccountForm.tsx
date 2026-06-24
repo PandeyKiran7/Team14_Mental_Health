@@ -180,7 +180,7 @@ export default function UserAccountForm() {
     }
 
     const token = getAccessToken();
-    if (!token || !user.userId) {
+    if (!token || !user?.userId) {
       setError("Please log in again.");
       setSaving(false);
       return;
@@ -195,18 +195,11 @@ export default function UserAccountForm() {
     };
 
     try {
-      const response = isAdmin
-        ? await apiPatchCall({
-            endpoint: "admin_update_user",
-            pathParams: { userId: user.userId },
-            ...payload,
-            token,
-          })
-        : await apiPatchCall({
-            endpoint: "update_user",
-            ...payload,
-            token,
-          });
+      const response = await apiPatchCall({
+        endpoint: "update_user",
+        ...payload,
+        token,
+      });
 
       if (!isApiSuccess(response.status)) {
         setError(resolveApiError(response, "Failed to update account."));
@@ -242,10 +235,20 @@ export default function UserAccountForm() {
           : "Your account information at a glance."
       }
       action={
-        !loading && !editing ? <ProfileEditButton onClick={() => setEditing(true)} /> : null
+        !loading && !editing && !isAdmin ? (
+          <ProfileEditButton onClick={() => setEditing(true)} />
+        ) : null
       }
     >
       <ProfileAccountHeader user={user} className="mb-6" />
+
+      {isAdmin && !editing && (
+        <ApiMessage
+          variant="info"
+          className="mb-4"
+          message="Admin account details are view-only here. Use the Users page to manage other accounts."
+        />
+      )}
 
       {loading ? (
         <p className="text-sm text-zinc-500">Loading account details…</p>
@@ -263,6 +266,7 @@ export default function UserAccountForm() {
             ]}
           />
           {message && <ApiMessage message={message} variant="success" />}
+          {error && <ApiMessage message={error} variant="error" />}
         </div>
       ) : (
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">

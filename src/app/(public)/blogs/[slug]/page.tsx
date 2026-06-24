@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { fetchBlogs } from "@/lib/blogApi";
+import { getAccessToken } from "@/lib/auth";
 import { formatBlogCategory, type Blog } from "@/types/blog";
 import ApiMessage from "@/components/ui/ApiMessage";
 
@@ -15,7 +16,8 @@ export default function BlogDetailPage() {
 
   useEffect(() => {
     void (async () => {
-      const result = await fetchBlogs("published");
+      const token = getAccessToken() ?? undefined;
+      const result = await fetchBlogs("published", token);
       if (!result.ok) {
         setError(result.message);
         setLoading(false);

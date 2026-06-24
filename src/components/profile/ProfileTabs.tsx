@@ -47,7 +47,15 @@ export default function ProfileTabs({ tabs, defaultTab }: ProfileTabsProps) {
         </nav>
       </div>
 
-      <div>{activeTab?.content}</div>
+      {tabs.map((tab) => (
+        <div
+          key={tab.id}
+          hidden={tab.id !== activeTab?.id}
+          aria-hidden={tab.id !== activeTab?.id}
+        >
+          {tab.content}
+        </div>
+      ))}
     </div>
   );
 }

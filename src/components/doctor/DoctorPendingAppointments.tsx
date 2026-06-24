@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   getNetworkErrorMessage,
@@ -63,20 +62,10 @@ export default function DoctorPendingAppointments() {
 
   return (
     <div className="rounded-xl border border-teal-100 bg-white p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-teal-800">Pending appointments</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Approve or deny patient requests. Status updates on the patient side.
-          </p>
-        </div>
-        <Link
-          href="/doctor/bookings"
-          className="text-sm font-medium text-teal-700 underline hover:text-teal-900"
-        >
-          View all appointments
-        </Link>
-      </div>
+      <h2 className="text-lg font-semibold text-teal-800">Appointments</h2>
+      <p className="mt-1 text-sm text-zinc-500">
+        Approve or deny pending booking requests from your patients.
+      </p>
 
       {loading && <p className="mt-4 text-sm text-zinc-500">Loading…</p>}
       {error && <ApiMessage message={error} variant="error" className="mt-4" />}
@@ -93,6 +82,7 @@ export default function DoctorPendingAppointments() {
           >
             <div>
               <p className="font-medium text-zinc-800">{booking.patient.name}</p>
+              <p className="text-xs text-zinc-500">User ID: {booking.patient.id}</p>
               <p className="text-sm text-zinc-600">
                 {booking.bookingDate} · {booking.startTime}–{booking.endTime}
               </p>

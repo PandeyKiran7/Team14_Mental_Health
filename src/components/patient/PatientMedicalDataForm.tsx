@@ -122,7 +122,15 @@ function optionLabel(
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
-export default function PatientMedicalDataForm() {
+type PatientMedicalDataFormProps = {
+  mandatory?: boolean;
+  onComplete?: () => void;
+};
+
+export default function PatientMedicalDataForm({
+  mandatory = false,
+  onComplete,
+}: PatientMedicalDataFormProps = {}) {
   const router = useRouter();
   const [form, setForm] = useState(emptyForm);
   const [snapshot, setSnapshot] = useState(emptyForm);
@@ -144,6 +152,12 @@ export default function PatientMedicalDataForm() {
           endpoint: "patient_medical_data",
           token: token ?? undefined,
         });
+
+        if (response.status === 404) {
+          setHasRecord(false);
+          setEditing(true);
+          return;
+        }
 
         if (response.status !== API_CONSTANTS.success) {
           setError(
@@ -242,7 +256,11 @@ export default function PatientMedicalDataForm() {
       setSnapshot(form);
 
       if (!hasRecord) {
-        router.push("/patient/dashboard");
+        if (onComplete) {
+          onComplete();
+        } else {
+          router.push("/patient/dashboard");
+        }
         return;
       }
 
@@ -255,29 +273,9 @@ export default function PatientMedicalDataForm() {
     }
   }
 
-  if (loading) {
-    return (
-      <ProfileSection title="Medical profile">
-        <p className="text-sm text-zinc-500">Loading medical profile…</p>
-      </ProfileSection>
-    );
-  }
-
-  return (
-    <ProfileSection
-      title={hasRecord ? "Medical profile" : "Complete medical profile"}
-      description={
-        editing || !hasRecord
-          ? "Your diabetes and health information used for care and appointments."
-          : "Your saved medical information."
-      }
-      action={
-        hasRecord && !editing && !loading ? (
-          <ProfileEditButton onClick={() => setEditing(true)} />
-        ) : null
-      }
-    >
-      {hasRecord && !editing ? (
+  const formContent = (
+    <>
+      {hasRecord && !editing && !mandatory ? (
         <div className="space-y-4">
           <ProfileDetailGrid
             items={[
@@ -459,7 +457,7 @@ export default function PatientMedicalDataForm() {
         <FormButton type="submit" disabled={saving} fullWidth={false}>
           {saving ? "Saving…" : hasRecord ? "Update profile" : "Save profile"}
         </FormButton>
-        {hasRecord && (
+        {hasRecord && !mandatory && (
           <FormButton
             type="button"
             variant="secondary"
@@ -473,6 +471,40 @@ export default function PatientMedicalDataForm() {
       </div>
       </form>
       )}
+    </>
+  );
+
+  if (loading) {
+    if (mandatory) {
+      return <p className="text-sm text-zinc-500">Loading medical profile…</p>;
+    }
+
+    return (
+      <ProfileSection title="Medical profile">
+        <p className="text-sm text-zinc-500">Loading medical profile…</p>
+      </ProfileSection>
+    );
+  }
+
+  if (mandatory) {
+    return formContent;
+  }
+
+  return (
+    <ProfileSection
+      title={hasRecord ? "Medical profile" : "Complete medical profile"}
+      description={
+        editing || !hasRecord
+          ? "Your diabetes and health information used for care and appointments."
+          : "Your saved medical information."
+      }
+      action={
+        hasRecord && !editing && !loading ? (
+          <ProfileEditButton onClick={() => setEditing(true)} />
+        ) : null
+      }
+    >
+      {formContent}
     </ProfileSection>
   );
 }

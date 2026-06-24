@@ -26,7 +26,7 @@ const ROLE_STYLES: Record<string, string> = {
 };
 
 function formatRoleLabel(role: string): string {
-  if (role.toUpperCase() === "INTERNAL_MANAGER") return "Content manager";
+  if (role.toUpperCase() === "INTERNAL_MANAGER") return "Internal manager";
   return role.replace(/_/g, " ");
 }
 

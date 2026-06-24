@@ -24,11 +24,11 @@ export const API_ENDPOINTS = {
   delete_user: "/api/v1/user/:userId",
   update_user: "/api/v1/update/user",
   user_status: "/api/v1/userStatus/:userId",
-  admin_update_user: "/api/v1/admin/user/:userId",
   patients: "/api/v1/patients",
   doctors: "/api/v1/doctors",
   content_managers: "/api/v1/content-managers",
   // BookingManagement
+  /** BookAppointment — POST /api/v1/book-appointment/:doctorId (doctor user id) */
   book_appointment: "/api/v1/book-appointment/:doctorId",
   bookings: "/api/v1/bookings",
   approve_booking: "/api/v1/approve-booking/:bookingId",
@@ -45,6 +45,11 @@ export const API_ENDPOINTS = {
   published_blogs: "/api/v1/published-blogs",
   draft_blogs: "/api/v1/draft-blogs",
   archived_blogs: "/api/v1/archived-blogs",
+  // Payment & Payout
+  /** GetPaymentDetailsForDoctor — POST /api/v1/doctor-finance-details/:doctorId (doctor user id) */
+  doctor_finance_details: "/api/v1/doctor-finance-details/:doctorId",
+  /** paySalary — POST /api/v1/payout/:userId (doctor user id) */
+  pay_salary: "/api/v1/payout/:userId",
 } as const;
 
 export function resolveApiUrl(
