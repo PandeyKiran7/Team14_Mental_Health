@@ -6,6 +6,10 @@ import FormButton from "@/components/formElements/FormButton";
 import FormInput from "@/components/formElements/FormInput";
 import FormSelect from "@/components/formElements/FormSelect";
 import FormField from "@/components/formElements/FormField";
+import ProfileDetailGrid from "@/components/profile/ProfileDetailGrid";
+import ProfileEditButton from "@/components/profile/ProfileEditButton";
+import ProfileSection from "@/components/profile/ProfileSection";
+import ApiMessage from "@/components/ui/ApiMessage";
 import { API_CONSTANTS } from "@/constants/staticConstant";
 import { getApiErrorMessage } from "@/helper/apiErrors";
 import { extractApiEntity } from "@/helper/apiResponse";
@@ -111,13 +115,31 @@ function toPayload(form: typeof emptyForm) {
   };
 }
 
-export default function PatientMedicalDataForm() {
+function optionLabel(
+  options: { value: string; label: string }[],
+  value: string,
+): string {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
+type PatientMedicalDataFormProps = {
+  mandatory?: boolean;
+  onComplete?: () => void;
+};
+
+export default function PatientMedicalDataForm({
+  mandatory = false,
+  onComplete,
+}: PatientMedicalDataFormProps = {}) {
   const router = useRouter();
   const [form, setForm] = useState(emptyForm);
+  const [snapshot, setSnapshot] = useState(emptyForm);
   const [hasRecord, setHasRecord] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -130,6 +152,12 @@ export default function PatientMedicalDataForm() {
           endpoint: "patient_medical_data",
           token: token ?? undefined,
         });
+
+        if (response.status === 404) {
+          setHasRecord(false);
+          setEditing(true);
+          return;
+        }
 
         if (response.status !== API_CONSTANTS.success) {
           setError(
@@ -144,10 +172,14 @@ export default function PatientMedicalDataForm() {
         );
 
         if (patient) {
-          setForm(toFormValues(patient));
+          const values = toFormValues(patient);
+          setForm(values);
+          setSnapshot(values);
           setHasRecord(true);
+          setEditing(false);
         } else {
           setHasRecord(false);
+          setEditing(true);
         }
       } catch {
         setError("Cannot reach backend.");
@@ -161,6 +193,13 @@ export default function PatientMedicalDataForm() {
 
   function updateField(field: keyof typeof emptyForm, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleCancelEdit() {
+    setForm(snapshot);
+    setEditing(false);
+    setError(null);
+    setMessage(null);
   }
 
   async function saveMedicalData(payload: ReturnType<typeof toPayload>, create: boolean) {
@@ -184,6 +223,7 @@ export default function PatientMedicalDataForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setMessage(null);
     setSaving(true);
 
     const payload = toPayload(form);
@@ -213,8 +253,19 @@ export default function PatientMedicalDataForm() {
       }
 
       setHasRecord(true);
-      router.push("/patient/dashboard");
-      return;
+      setSnapshot(form);
+
+      if (!hasRecord) {
+        if (onComplete) {
+          onComplete();
+        } else {
+          router.push("/patient/dashboard");
+        }
+        return;
+      }
+
+      setEditing(false);
+      setMessage("Medical profile updated successfully.");
     } catch {
       setError("Cannot reach backend.");
     } finally {
@@ -222,17 +273,38 @@ export default function PatientMedicalDataForm() {
     }
   }
 
-  if (loading) {
-    return (
-      <p className="mt-6 text-sm text-zinc-500">Loading medical profile…</p>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-4 rounded-xl border border-teal-100 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-teal-800">
-        {hasRecord ? "Your medical profile" : "Complete your medical profile"}
-      </h2>
+  const formContent = (
+    <>
+      {hasRecord && !editing && !mandatory ? (
+        <div className="space-y-4">
+          <ProfileDetailGrid
+            items={[
+              { label: "Diabetes type", value: form.diabetesType },
+              { label: "Diagnosis date", value: form.diagnosisDate },
+              { label: "Previous diagnosis", value: form.previousDiagnosis },
+              { label: "Blood group", value: form.bloodGroup },
+              { label: "Height (cm)", value: form.heightCM },
+              { label: "Weight (kg)", value: form.weightKG },
+              {
+                label: "Target glucose",
+                value: `${form.targetGlucoseMin} – ${form.targetGlucoseMax}`,
+              },
+              { label: "Activity level", value: optionLabel(activityOptions, form.activityLevel) },
+              {
+                label: "Dietary preference",
+                value: optionLabel(dietOptions, form.dietaryPreference),
+              },
+              { label: "Emergency contact", value: form.emergencyContactName },
+              { label: "Emergency phone", value: form.emergencyContactPhone },
+              { label: "Current medication", value: form.currentMedication },
+              { label: "Symptoms", value: form.symptoms },
+              { label: "Short description", value: form.shortDescription },
+            ]}
+          />
+          {message && <ApiMessage message={message} variant="success" />}
+        </div>
+      ) : (
+      <form onSubmit={handleSubmit} className="space-y-4">
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormInput
@@ -381,9 +453,58 @@ export default function PatientMedicalDataForm() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <FormButton type="submit" disabled={saving}>
-        {saving ? "Saving…" : hasRecord ? "Update profile" : "Save profile"}
-      </FormButton>
-    </form>
+      <div className="flex flex-wrap gap-3">
+        <FormButton type="submit" disabled={saving} fullWidth={false}>
+          {saving ? "Saving…" : hasRecord ? "Update profile" : "Save profile"}
+        </FormButton>
+        {hasRecord && !mandatory && (
+          <FormButton
+            type="button"
+            variant="secondary"
+            fullWidth={false}
+            disabled={saving}
+            onClick={handleCancelEdit}
+          >
+            Cancel
+          </FormButton>
+        )}
+      </div>
+      </form>
+      )}
+    </>
+  );
+
+  if (loading) {
+    if (mandatory) {
+      return <p className="text-sm text-zinc-500">Loading medical profile…</p>;
+    }
+
+    return (
+      <ProfileSection title="Medical profile">
+        <p className="text-sm text-zinc-500">Loading medical profile…</p>
+      </ProfileSection>
+    );
+  }
+
+  if (mandatory) {
+    return formContent;
+  }
+
+  return (
+    <ProfileSection
+      title={hasRecord ? "Medical profile" : "Complete medical profile"}
+      description={
+        editing || !hasRecord
+          ? "Your diabetes and health information used for care and appointments."
+          : "Your saved medical information."
+      }
+      action={
+        hasRecord && !editing && !loading ? (
+          <ProfileEditButton onClick={() => setEditing(true)} />
+        ) : null
+      }
+    >
+      {formContent}
+    </ProfileSection>
   );
 }

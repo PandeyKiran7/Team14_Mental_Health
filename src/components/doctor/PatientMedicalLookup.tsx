@@ -5,7 +5,8 @@ import { API_CONSTANTS } from "@/constants/staticConstant";
 import { getApiErrorMessage } from "@/helper/apiErrors";
 import { apiGetCall } from "@/helper/apiService";
 import { getAccessToken } from "@/lib/auth";
-import { normalizeBookings } from "@/types/booking";
+import { loadMyBookingsSafe } from "@/lib/myBookings";
+import { Select } from "@/components/ui/select";
 import {
   normalizeUserWithMedicalData,
   type UserWithMedicalData,
@@ -26,40 +27,49 @@ function formatDate(value?: string) {
 export default function PatientMedicalLookup() {
   const [patients, setPatients] = useState<PatientOption[]>([]);
   const [loadingPatients, setLoadingPatients] = useState(true);
+  const [patientsError, setPatientsError] = useState<string | null>(null);
   const [userId, setUserId] = useState("");
+  const [manualUserId, setManualUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<UserWithMedicalData | null>(null);
 
   const loadPatients = useCallback(async () => {
     setLoadingPatients(true);
-    try {
-      const response = await apiGetCall({
-        endpoint: "bookings",
-        token: getAccessToken() ?? undefined,
-      });
+    setPatientsError(null);
 
-      if (response.status !== API_CONSTANTS.success) return;
-
-      const bookings = normalizeBookings(response.data);
-      const map = new Map<number, PatientOption>();
-
-      for (const booking of bookings) {
-        map.set(booking.patient.id, {
-          userId: booking.patient.id,
-          name: booking.patient.name,
-        });
-      }
-
-      setPatients(Array.from(map.values()));
-    } finally {
+    const token = getAccessToken();
+    if (!token) {
+      setPatients([]);
       setLoadingPatients(false);
+      return;
     }
+
+    const bookingsResult = await loadMyBookingsSafe(token);
+    if (!bookingsResult.ok) {
+      setPatientsError(bookingsResult.message);
+      setPatients([]);
+      setLoadingPatients(false);
+      return;
+    }
+
+    const map = new Map<number, PatientOption>();
+    for (const booking of bookingsResult.data) {
+      map.set(booking.patient.id, {
+        userId: booking.patient.id,
+        name: booking.patient.name,
+      });
+    }
+
+    setPatients(Array.from(map.values()));
+    setLoadingPatients(false);
   }, []);
 
   const fetchMedicalData = useCallback(async (patientUserId: string) => {
-    if (!patientUserId) {
+    const trimmed = patientUserId.trim();
+    if (!trimmed || !/^\d+$/.test(trimmed)) {
       setResult(null);
+      setError(trimmed ? "User ID must be a number." : null);
       return;
     }
 
@@ -70,7 +80,7 @@ export default function PatientMedicalLookup() {
     try {
       const response = await apiGetCall({
         endpoint: "user_medical_data",
-        pathParams: { userId: patientUserId },
+        pathParams: { userId: trimmed },
         token: getAccessToken() ?? undefined,
       });
 
@@ -92,7 +102,9 @@ export default function PatientMedicalLookup() {
   }, [loadPatients]);
 
   useEffect(() => {
-    void fetchMedicalData(userId);
+    if (userId) {
+      void fetchMedicalData(userId);
+    }
   }, [userId, fetchMedicalData]);
 
   const selectedPatient = useMemo(
@@ -100,24 +112,52 @@ export default function PatientMedicalLookup() {
     [patients, userId],
   );
 
+  function handleManualLookup(event: React.FormEvent) {
+    event.preventDefault();
+    setUserId("");
+    void fetchMedicalData(manualUserId);
+  }
+
   return (
-    <div className="rounded-xl border border-teal-100 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-teal-100 bg-white p-6">
       <h2 className="text-lg font-semibold text-teal-800">Patient medical records</h2>
-      <p className="mt-1 text-sm text-zinc-500">
-        Select a patient who booked an appointment with you. Their medical data loads
-        automatically.
-      </p>
+
+      <form onSubmit={handleManualLookup} className="mt-4 flex flex-wrap items-end gap-3">
+        <div className="min-w-[12rem] flex-1">
+          <label htmlFor="manualUserId" className="mb-1 block text-sm font-medium text-zinc-700">
+            User ID
+          </label>
+          <input
+            id="manualUserId"
+            type="text"
+            inputMode="numeric"
+            value={manualUserId}
+            onChange={(e) => setManualUserId(e.target.value)}
+            placeholder="e.g. 1"
+            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading || !manualUserId.trim()}
+          className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
+        >
+          Look up
+        </button>
+      </form>
 
       <div className="mt-4">
         <label htmlFor="patientSelect" className="mb-1 block text-sm font-medium text-zinc-700">
-          Patient *
+          Or select from booked patients
         </label>
-        <select
+        <Select
           id="patientSelect"
           value={userId}
-          onChange={(e) => setUserId(e.target.value)}
+          onChange={(e) => {
+            setManualUserId("");
+            setUserId(e.target.value);
+          }}
           disabled={loadingPatients}
-          className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-zinc-50"
         >
           <option value="">
             {loadingPatients
@@ -128,11 +168,15 @@ export default function PatientMedicalLookup() {
           </option>
           {patients.map((p) => (
             <option key={p.userId} value={p.userId}>
-              {p.name}
+              {p.name} (User ID: {p.userId})
             </option>
           ))}
-        </select>
+        </Select>
       </div>
+
+      {patientsError && (
+        <p className="mt-4 text-sm text-red-600">{patientsError}</p>
+      )}
 
       {loading && (
         <p className="mt-4 text-sm text-zinc-500">Loading medical records…</p>
@@ -148,7 +192,9 @@ export default function PatientMedicalLookup() {
             <p className="mt-1 font-semibold text-zinc-800">
               {selectedPatient?.name ?? `${result.firstName} ${result.lastName}`}
             </p>
-            <p className="text-sm text-zinc-500">{result.email}</p>
+            <p className="text-sm text-zinc-500">
+              User ID: {result.userId} · {result.email}
+            </p>
           </div>
 
           {result.patient ? (

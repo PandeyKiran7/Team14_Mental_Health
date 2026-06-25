@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { API_CONSTANTS } from "@/constants/staticConstant";
-import { getApiErrorMessage } from "@/helper/apiErrors";
-import { apiGetCall, apiPostCall } from "@/helper/apiService";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getNetworkErrorMessage,
+  isApiSuccess,
+  resolveApiError,
+} from "@/helper/apiErrors";
+import { apiPostCall } from "@/helper/apiService";
 import { getAccessToken } from "@/lib/auth";
-import { normalizeUsers } from "@/types/admin";
-
-type DoctorOption = {
-  userId: number;
-  name: string;
-};
+import { loadBookableDoctors, type BookableDoctor } from "@/lib/bookableDoctors";
+import { Select } from "@/components/ui/select";
+import ApiMessage from "@/components/ui/ApiMessage";
 
 type BookAppointmentFormProps = {
   onBooked: () => void;
 };
 
 export default function BookAppointmentForm({ onBooked }: BookAppointmentFormProps) {
-  const [doctorId, setDoctorId] = useState("");
+  const [doctorUserId, setDoctorUserId] = useState("");
   const [bookingDate, setBookingDate] = useState("");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("09:30");
@@ -26,23 +26,33 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
   const [loadingDoctors, setLoadingDoctors] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [doctors, setDoctors] = useState<DoctorOption[]>([]);
+  const [doctors, setDoctors] = useState<BookableDoctor[]>([]);
+
+  const selectedDoctor = useMemo(
+    () => doctors.find((doctor) => String(doctor.userId) === doctorUserId),
+    [doctors, doctorUserId],
+  );
 
   useEffect(() => {
     async function loadDoctors() {
       setLoadingDoctors(true);
-      const response = await apiGetCall({ endpoint: "users" });
-      if (response.status === API_CONSTANTS.success) {
-        const list = normalizeUsers(response.data)
-          .filter((u) => u.role.toUpperCase() === "DOCTOR")
-          .map((d) => ({
-            userId: d.userId,
-            name: `${d.firstName} ${d.lastName}`,
-          }));
-        setDoctors(list);
+      setError(null);
+
+      const token = getAccessToken();
+      if (!token) {
+        setError("Please log in to book an appointment.");
+        setLoadingDoctors(false);
+        return;
+      }
+
+      const result = await loadBookableDoctors(token);
+      setDoctors(result.doctors);
+      if (result.error) {
+        setError(result.error);
       }
       setLoadingDoctors(false);
     }
+
     void loadDoctors();
   }, []);
 
@@ -52,57 +62,81 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
     setError(null);
     setMessage(null);
 
+    const token = getAccessToken();
+    if (!token) {
+      setError("Please log in to book an appointment.");
+      setSaving(false);
+      return;
+    }
+
+    if (!selectedDoctor) {
+      setError("Please select a doctor.");
+      setSaving(false);
+      return;
+    }
+
     try {
+      const pathDoctorId = selectedDoctor.bookingDoctorId;
+      const payload = {
+        bookingDate,
+        startTime: startTime.slice(0, 5),
+        endTime: endTime.slice(0, 5),
+        notes: notes.trim() || undefined,
+      };
+
+      if (process.env.NODE_ENV === "development") {
+        console.info("[Team14] POST book-appointment", {
+          doctorUserId: selectedDoctor.userId,
+          pathDoctorId,
+          body: payload,
+        });
+      }
+
       const response = await apiPostCall({
         endpoint: "book_appointment",
-        doctorId: Number(doctorId),
-        bookingDate,
-        startTime,
-        endTime,
-        notes: notes || undefined,
-        token: getAccessToken() ?? undefined,
+        pathParams: { doctorId: pathDoctorId },
+        ...payload,
+        token,
       });
 
-      if (response.status !== 201 && response.status !== API_CONSTANTS.success) {
-        setError(
-          getApiErrorMessage(
-            response.data,
-            `Failed to book appointment (${response.status}).`,
-          ),
-        );
+      if (!isApiSuccess(response.status)) {
+        const apiError = resolveApiError(response, "Failed to book appointment.");
+        if (response.status === 404 && apiError.toLowerCase().includes("doctor")) {
+          setError(
+            "This doctor is not available for booking yet. They may need to complete their professional profile first.",
+          );
+        } else {
+          setError(apiError);
+        }
         return;
       }
 
       setMessage("Appointment booked successfully. Waiting for doctor approval.");
-      setDoctorId("");
+      setDoctorUserId("");
       setNotes("");
       onBooked();
-    } catch {
-      setError("Cannot reach backend.");
+    } catch (submitError) {
+      setError(getNetworkErrorMessage(submitError));
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="rounded-xl border border-teal-100 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-teal-100 bg-white p-6">
       <h2 className="text-lg font-semibold text-teal-800">Book appointment</h2>
-      <p className="mt-1 text-sm text-zinc-500">
-        Select a doctor from the list below to book your appointment.
-      </p>
 
       <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-4">
         <div>
-          <label htmlFor="doctorId" className="mb-1 block text-sm font-medium text-zinc-700">
+          <label htmlFor="doctorUserId" className="mb-1 block text-sm font-medium text-zinc-700">
             Doctor *
           </label>
-          <select
-            id="doctorId"
+          <Select
+            id="doctorUserId"
             required
-            value={doctorId}
-            onChange={(e) => setDoctorId(e.target.value)}
+            value={doctorUserId}
+            onChange={(e) => setDoctorUserId(e.target.value)}
             disabled={loadingDoctors || doctors.length === 0}
-            className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-zinc-50"
           >
             <option value="">
               {loadingDoctors
@@ -111,12 +145,13 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
                   ? "No doctors available"
                   : "Select a doctor"}
             </option>
-            {doctors.map((d) => (
-              <option key={d.userId} value={d.userId}>
-                Dr. {d.name}
+            {doctors.map((doctor) => (
+              <option key={doctor.userId} value={String(doctor.userId)}>
+                {doctor.name}
+                {doctor.specialization ? ` — ${doctor.specialization}` : ""}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -168,8 +203,8 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
           />
         </div>
 
-        {message && <p className="text-sm text-teal-700">{message}</p>}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {message && <ApiMessage message={message} variant="success" />}
+        {error && <ApiMessage message={error} variant="error" />}
 
         <button
           type="submit"

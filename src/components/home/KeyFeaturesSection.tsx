@@ -24,9 +24,9 @@ export default function KeyFeaturesSection() {
           return (
             <div
               key={feature.title}
-              className="rounded-2xl border border-teal-100 bg-white p-8 text-center shadow-md transition hover:shadow-lg"
+              className="rounded-2xl border border-teal-100 bg-white p-8 text-center transition"
             >
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-teal-600 text-white shadow-md">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-teal-600 text-white">
                 <Icon className="h-7 w-7" aria-hidden />
               </div>
               <h3 className="mt-5 text-lg font-semibold text-teal-900">

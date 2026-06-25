@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { XIcon } from "@phosphor-icons/react";
-import { API_CONSTANTS } from "@/constants/staticConstant";
-import { getApiErrorMessage } from "@/helper/apiErrors";
+import {
+  getNetworkErrorMessage,
+  isApiSuccess,
+  resolveAdminMutationError,
+  resolveApiError,
+} from "@/helper/apiErrors";
 import { apiPatchCall } from "@/helper/apiService";
 import { getAccessToken } from "@/lib/auth";
 import type { AdminUser } from "@/types/admin";
 
-const STATUS_OPTIONS = ["ACTIVE", "INACTIVE", "BLOCKED"] as const;
+const STATUS_OPTIONS = ["ACTIVE", "INACTIVE"] as const;
 
 type UserStatusModalProps = {
   user: AdminUser | null;
@@ -21,12 +25,12 @@ export default function UserStatusModal({
   onClose,
   onUpdated,
 }: UserStatusModalProps) {
-  const [status, setStatus] = useState(user?.isActive ?? "ACTIVE");
+  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) setStatus(user.isActive);
+    if (user) setStatus(user.isActive === "INACTIVE" ? "INACTIVE" : "ACTIVE");
   }, [user]);
 
   if (!user) return null;
@@ -43,12 +47,9 @@ export default function UserStatusModal({
         token: getAccessToken() ?? undefined,
       });
 
-      if (response.status !== API_CONSTANTS.success) {
+      if (!isApiSuccess(response.status)) {
         setError(
-          getApiErrorMessage(
-            response.data,
-            "Failed to update status. Backend may require admin route fix.",
-          ),
+          resolveAdminMutationError(response, "Failed to update status."),
         );
         return;
       }
@@ -70,14 +71,11 @@ export default function UserStatusModal({
         className="absolute inset-0 bg-zinc-900/50"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md rounded-xl border border-teal-100 bg-white p-6 shadow-xl">
+      <div className="relative z-10 w-full max-w-md rounded-xl border border-teal-100 bg-white p-6">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-teal-800">Update status</h2>
-            <p className="mt-1 text-sm text-zinc-500">
-              {user.firstName} {user.lastName}
-            </p>
-          </div>
+          <p className="text-sm text-zinc-600">
+            {user.firstName} {user.lastName}
+          </p>
           <button
             type="button"
             onClick={onClose}
@@ -93,7 +91,7 @@ export default function UserStatusModal({
           </label>
           <select
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e) => setStatus(e.target.value as "ACTIVE" | "INACTIVE")}
             className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
           >
             {STATUS_OPTIONS.map((option) => (

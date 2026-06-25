@@ -8,7 +8,7 @@ const steps = [
   {
     icon: UserCircle,
     title: "Create your account",
-    text: "Register as a patient or doctor and complete your profile.",
+    text: "Patients register here; doctors are added by admin. Complete your profile after login.",
   },
   {
     icon: CalendarCheck,
@@ -33,7 +33,7 @@ export default function HowItWorksSection() {
         {steps.map((step, index) => (
           <div
             key={step.title}
-            className="relative rounded-2xl border border-teal-100 bg-white p-6 shadow-sm"
+            className="relative rounded-2xl border border-teal-100 bg-white p-6"
           >
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-teal-600 text-sm font-bold text-white">
               {index + 1}

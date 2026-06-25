@@ -14,7 +14,7 @@ export default function PlaceholderPanel({
   return (
     <div
       className={cn(
-        "rounded-xl border border-dashed border-teal-200 bg-white p-8 text-center shadow-sm",
+        "rounded-xl border border-dashed border-teal-200 bg-white p-8 text-center",
         className,
       )}
     >

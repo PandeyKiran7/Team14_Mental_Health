@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   update_patient_medical_data: "/api/v1/update/patient-medical-data",
   // DoctorDetailsManagement
   doctor_data: "/api/v1/doctor-data",
+  doctor_data_by_id: "/api/v1/doctor-data/:doctorId",
   user_medical_data: "/api/v1/user-medical-data/:userId",
   // Users Management
   users: "/api/v1/users",
@@ -27,7 +28,8 @@ export const API_ENDPOINTS = {
   doctors: "/api/v1/doctors",
   content_managers: "/api/v1/content-managers",
   // BookingManagement
-  book_appointment: "/api/v1/book-appointment",
+  /** BookAppointment — POST /api/v1/book-appointment/:doctorId (doctor user id) */
+  book_appointment: "/api/v1/book-appointment/:doctorId",
   bookings: "/api/v1/bookings",
   approve_booking: "/api/v1/approve-booking/:bookingId",
   deny_booking: "/api/v1/deny-booking/:bookingId",
@@ -37,6 +39,17 @@ export const API_ENDPOINTS = {
   // Recommendation
   recommendation: "/api/v1/recommendation/:bookingId",
   recommendation_download: "/api/v1/recommendation/:bookingId/download",
+  // BlogManagement
+  blog_create: "/api/v1/blog",
+  blog_by_id: "/api/v1/blog/:blogId",
+  published_blogs: "/api/v1/published-blogs",
+  draft_blogs: "/api/v1/draft-blogs",
+  archived_blogs: "/api/v1/archived-blogs",
+  // Payment & Payout
+  /** GetPaymentDetailsForDoctor — POST /api/v1/doctor-finance-details/:doctorId (doctor user id) */
+  doctor_finance_details: "/api/v1/doctor-finance-details/:doctorId",
+  /** paySalary — POST /api/v1/payout/:userId (doctor user id) */
+  pay_salary: "/api/v1/payout/:userId",
 } as const;
 
 export function resolveApiUrl(

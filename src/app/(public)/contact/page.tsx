@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { EnvelopeIcon, PhoneIcon, ChatCircleIcon, HospitalIcon, MapPinIcon, ClockIcon, ShareNetworkIcon } from "@phosphor-icons/react";
+import ContactForm from "@/components/contact/ContactForm";
 
 const contactOptions = [
   {
@@ -64,80 +64,7 @@ export default function ContactPage() {
             All fields marked * are required.
           </p>
 
-          <div
-            className="mt-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-            role="status"
-          >
-            The contact form is not connected to the backend. Please use email or
-            phone above to reach support.
-          </div>
-
-          <div className="mt-8 space-y-5 opacity-60">
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700">
-                  Full name *
-                </label>
-                <input
-                  type="text"
-                  disabled
-                  placeholder="Jane Smith"
-                  className="w-full cursor-not-allowed rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-zinc-700">
-                  Email address *
-                </label>
-                <input
-                  type="email"
-                  disabled
-                  placeholder="jane@example.com"
-                  className="w-full cursor-not-allowed rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700">
-                Subject *
-              </label>
-              <select
-                disabled
-                className="w-full cursor-not-allowed rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500"
-              >
-                <option>General enquiry</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-700">
-                Message *
-              </label>
-              <textarea
-                disabled
-                rows={5}
-                placeholder="Describe how we can help you…"
-                className="w-full cursor-not-allowed resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500"
-              />
-            </div>
-
-            <p className="text-xs text-zinc-400">
-              By submitting, you agree to our{" "}
-              <Link href="/privacy" className="text-teal-600 hover:underline">
-                Privacy Policy
-              </Link>
-              .
-            </p>
-
-            <button
-              type="button"
-              disabled
-              className="cursor-not-allowed rounded-full bg-zinc-300 px-8 py-3 font-semibold text-zinc-500"
-            >
-              Send message (unavailable)
-            </button>
-          </div>
+          <ContactForm />
         </div>
 
         {/* Sidebar info — 2 cols */}

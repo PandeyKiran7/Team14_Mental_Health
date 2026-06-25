@@ -26,14 +26,21 @@ export default function StatCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-teal-100 bg-white p-5 shadow-sm",
+        "rounded-xl border border-teal-100 bg-white p-5",
         className,
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-zinc-500">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-teal-900">{value}</p>
+          <p
+            className={cn(
+              "mt-2 font-bold text-teal-900",
+              typeof value === "number" ? "text-3xl" : "text-xl leading-snug",
+            )}
+          >
+            {value}
+          </p>
         </div>
         <span
           className={cn(

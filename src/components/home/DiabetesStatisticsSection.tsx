@@ -13,7 +13,7 @@ export default function DiabetesStatisticsSection() {
         {statistics.items.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-2xl border border-teal-100 bg-white p-8 text-center shadow-md"
+            className="rounded-2xl border border-teal-100 bg-white p-8 text-center"
           >
             <p className="text-3xl font-bold text-teal-700 md:text-4xl">
               {stat.value}
@@ -28,7 +28,7 @@ export default function DiabetesStatisticsSection() {
         {statistics.highlights.map((item, index) => (
           <div
             key={item.title}
-            className="flex gap-4 rounded-2xl border border-teal-100 bg-white p-6 shadow-sm"
+            className="flex gap-4 rounded-2xl border border-teal-100 bg-white p-6"
           >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700">
               {index === 0 ? (

@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { API_CONSTANTS } from "@/constants/staticConstant";
 import { getApiErrorMessage } from "@/helper/apiErrors";
-import { apiDownloadCall, apiGetCall, apiPostCall } from "@/helper/apiService";
+import { apiGetCall, apiPatchCall, apiPostCall } from "@/helper/apiService";
+import BookingDocumentSection from "@/components/booking/BookingDocumentSection";
 import { getAccessToken } from "@/lib/auth";
+import { downloadRecommendationDocument } from "@/lib/downloadDocument";
+import { joinCommaList, splitCommaList } from "@/lib/splitList";
 import {
   normalizeRecommendation,
   type Recommendation,
@@ -30,6 +33,7 @@ export default function RecommendationSection({
   const [lunch, setLunch] = useState("");
   const [dinner, setDinner] = useState("");
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -47,9 +51,9 @@ export default function RecommendationSection({
         if (data) {
           setAdvice(data.advice);
           setLifestyleChanges(data.lifestyleChanges ?? "");
-          setBreakfast(data.dietPlan?.breakfast?.join(", ") ?? "");
-          setLunch(data.dietPlan?.lunch?.join(", ") ?? "");
-          setDinner(data.dietPlan?.dinner?.join(", ") ?? "");
+          setBreakfast(joinCommaList(data.dietPlan?.breakfast));
+          setLunch(joinCommaList(data.dietPlan?.lunch));
+          setDinner(joinCommaList(data.dietPlan?.dinner));
         }
       } else {
         setRecommendation(null);
@@ -66,31 +70,40 @@ export default function RecommendationSection({
     else setLoading(false);
   }, [isConfirmed, load]);
 
-  function splitList(value: string) {
-    return value
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+  function buildPayload() {
+    return {
+      advice,
+      lifestyleChanges: lifestyleChanges || undefined,
+      dietPlan: {
+        breakfast: splitCommaList(breakfast),
+        lunch: splitCommaList(lunch),
+        dinner: splitCommaList(dinner),
+      },
+    };
   }
 
   async function handleSave() {
     setSaving(true);
     setError(null);
 
+    const token = getAccessToken() ?? undefined;
+    const body = buildPayload();
+
     try {
-      const response = await apiPostCall({
-        endpoint: "recommendation",
-        pathParams: { bookingId },
-        bookingId,
-        advice,
-        lifestyleChanges: lifestyleChanges || undefined,
-        dietPlan: {
-          breakfast: splitList(breakfast),
-          lunch: splitList(lunch),
-          dinner: splitList(dinner),
-        },
-        token: getAccessToken() ?? undefined,
-      });
+      const response = recommendation
+        ? await apiPatchCall({
+            endpoint: "recommendation",
+            pathParams: { bookingId },
+            ...body,
+            token,
+          })
+        : await apiPostCall({
+            endpoint: "recommendation",
+            pathParams: { bookingId },
+            bookingId,
+            ...body,
+            token,
+          });
 
       if (response.status !== 201 && response.status !== API_CONSTANTS.success) {
         setError(getApiErrorMessage(response.data, "Failed to save recommendation."));
@@ -107,48 +120,42 @@ export default function RecommendationSection({
   }
 
   async function handleDownload() {
-    const result = await apiDownloadCall(
-      "recommendation_download",
-      { bookingId },
-      `recommendation-${bookingId}.pdf`,
-    );
+    if (!recommendation) return;
+
+    const token = getAccessToken();
+    if (!token) {
+      setError("Please log in to download the recommendation.");
+      return;
+    }
+
+    setDownloading(true);
+    setError(null);
+
+    const result = await downloadRecommendationDocument(bookingId, recommendation, token);
     if (!result.ok) setError(result.message);
+    setDownloading(false);
   }
 
   if (!isConfirmed) return null;
-  if (loading) return <p className="text-sm text-zinc-500">Loading recommendation…</p>;
 
   const isDoctor = role === "DOCTOR";
 
   return (
-    <div className="mt-4 rounded-lg border border-zinc-100 bg-zinc-50 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="font-medium text-teal-800">Recommendation</h4>
-        <div className="flex gap-2">
-          {recommendation && (
-            <button
-              type="button"
-              onClick={() => void handleDownload()}
-              className="text-xs font-medium text-teal-700 underline"
-            >
-              Download PDF
-            </button>
-          )}
-          {isDoctor && !recommendation && (
-            <button
-              type="button"
-              onClick={() => setEditing((v) => !v)}
-              className="text-xs font-medium text-teal-700 underline"
-            >
-              {editing ? "Cancel" : "Add recommendation"}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-
-      {editing && isDoctor ? (
+    <BookingDocumentSection
+      title="Recommendation"
+      error={error}
+      loading={loading}
+      loadingLabel="Loading recommendation…"
+      exists={Boolean(recommendation)}
+      isDoctor={isDoctor}
+      editing={editing}
+      saving={saving}
+      downloading={downloading}
+      editLabel={recommendation ? "Edit" : "Add recommendation"}
+      emptyLabel="No recommendation yet."
+      onToggleEdit={() => setEditing((value) => !value)}
+      onDownload={() => void handleDownload()}
+      form={
         <div className="mt-3 space-y-3">
           <textarea
             placeholder="Medical advice *"
@@ -192,13 +199,14 @@ export default function RecommendationSection({
             {saving ? "Saving…" : "Save recommendation"}
           </button>
         </div>
-      ) : recommendation ? (
+      }
+      view={
         <div className="mt-3 space-y-2 text-sm text-zinc-700">
-          <p>{recommendation.advice}</p>
-          {recommendation.lifestyleChanges && (
+          <p>{recommendation?.advice}</p>
+          {recommendation?.lifestyleChanges && (
             <p className="text-zinc-500">{recommendation.lifestyleChanges}</p>
           )}
-          {recommendation.dietPlan && (
+          {recommendation?.dietPlan && (
             <ul className="list-disc pl-5 text-zinc-600">
               {recommendation.dietPlan.breakfast?.length ? (
                 <li>Breakfast: {recommendation.dietPlan.breakfast.join(", ")}</li>
@@ -212,9 +220,7 @@ export default function RecommendationSection({
             </ul>
           )}
         </div>
-      ) : (
-        <p className="mt-2 text-sm text-zinc-500">No recommendation yet.</p>
-      )}
-    </div>
+      }
+    />
   );
 }

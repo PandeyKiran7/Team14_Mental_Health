@@ -9,7 +9,7 @@ export default function HeroSection() {
 
   return (
     <section id="hero" className="px-4 pb-4 pt-8 md:pt-10">
-      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl bg-gradient-to-br from-teal-600 via-teal-700 to-teal-900 px-8 py-16 text-white shadow-xl md:px-12 md:py-20">
+      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl bg-gradient-to-br from-teal-600 via-teal-700 to-teal-900 px-8 py-16 text-white md:px-12 md:py-20">
         <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10" />
         <div className="absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-white/5" />
         <div className="absolute bottom-0 right-0 hidden h-48 w-48 rounded-tl-full bg-white/5 md:block" />
@@ -31,7 +31,7 @@ export default function HeroSection() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4 lg:justify-start">
               <Link
                 href={hero.getStartedHref}
-                className="rounded-full bg-white px-8 py-3 font-semibold text-teal-800 shadow-md transition hover:bg-teal-50"
+                className="rounded-full bg-white px-8 py-3 font-semibold text-teal-800 transition hover:bg-teal-50"
               >
                 Get Started
               </Link>
@@ -54,7 +54,7 @@ export default function HeroSection() {
               {
                 icon: UsersThreeIcon,
                 title: "For doctors",
-                text: "Approve bookings, manage patients, issue care plans.",
+                text: "Sign in with your admin-provided account to approve bookings and manage patients.",
               },
               {
                 icon: ShieldCheckIcon,

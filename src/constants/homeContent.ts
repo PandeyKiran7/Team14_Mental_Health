@@ -3,7 +3,7 @@ export const homeContent = {
     title: "Diabetes Management System",
     tagline: "Monitor • Manage • Improve Health",
     description:
-      "Track glucose levels, book doctor appointments, receive prescriptions, and manage diabetes care—all in one secure platform built by Team 14.",
+      "Patients can register, track glucose levels, book doctor appointments, and receive prescriptions—all in one secure platform built by Team 14.",
     getStartedHref: "/register",
     loginHref: "/login",
   },
@@ -121,9 +121,9 @@ export const homeContent = {
     ],
   },
   cta: {
-    title: "Register Today",
+    title: "Register as a patient",
     description:
-      "Join patients using our platform for smarter monitoring and better care coordination.",
+      "Join patients using our platform for smarter monitoring and better care coordination. Doctors are onboarded by administrators.",
     registerHref: "/register",
     learnMoreHref: "/about",
   },

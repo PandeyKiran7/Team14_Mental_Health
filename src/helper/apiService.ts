@@ -1,6 +1,7 @@
 import axios, { type AxiosResponse } from "axios";
 import { API_ENDPOINTS, resolveApiUrl } from "./apiList";
 import { getAccessToken } from "@/lib/auth";
+import { isPdfBlob, readBlobMessage, saveBlobAsFile } from "@/lib/downloadBlob";
 
 export type ApiCallData = {
   endpoint: keyof typeof API_ENDPOINTS;
@@ -17,24 +18,21 @@ function resolveUrl(data: Pick<ApiCallData, "endpoint" | "pathParams">) {
   return resolveApiUrl(data.endpoint, data.pathParams);
 }
 
+/** Treat 4xx/5xx as normal responses — avoids AxiosError console noise. */
+const axiosConfig = (token?: string) => ({
+  headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
+  validateStatus: () => true,
+});
+
 export const apiFormPostCall = async (
   endpoint: keyof typeof API_ENDPOINTS,
   formData: FormData,
   token?: string,
 ) => {
   const url = resolveApiUrl(endpoint);
+  const authToken = token ?? getAccessToken() ?? undefined;
 
-  try {
-    return await axios.post(url, formData, {
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
-    });
-  } catch (error) {
-    console.error("apiFormPostCall error:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      return error.response;
-    }
-    throw error;
-  }
+  return axios.post(url, formData, axiosConfig(authToken));
 };
 
 export const apiPostCall = async (data: ApiCallData) => {
@@ -44,18 +42,9 @@ export const apiPostCall = async (data: ApiCallData) => {
 
   const { endpoint, token, pathParams, ...body } = data;
   const url = resolveUrl({ endpoint, pathParams });
+  const authToken = token ?? getAccessToken() ?? undefined;
 
-  try {
-    return await axios.post(url, body, {
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
-    });
-  } catch (error) {
-    console.error("apiPostCall error:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      return error.response;
-    }
-    throw error;
-  }
+  return axios.post(url, body, axiosConfig(authToken));
 };
 
 export const apiGetCall = async (data: ApiCallData) => {
@@ -65,19 +54,12 @@ export const apiGetCall = async (data: ApiCallData) => {
 
   const { endpoint, token, pathParams, ...params } = data;
   const url = resolveUrl({ endpoint, pathParams });
+  const authToken = token ?? getAccessToken() ?? undefined;
 
-  try {
-    return await axios.get(url, {
-      params,
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
-    });
-  } catch (error) {
-    console.error("apiGetCall error:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      return error.response;
-    }
-    throw error;
-  }
+  return axios.get(url, {
+    ...axiosConfig(authToken),
+    params,
+  });
 };
 
 export const apiPatchCall = async (data: ApiCallData) => {
@@ -87,18 +69,9 @@ export const apiPatchCall = async (data: ApiCallData) => {
 
   const { endpoint, token, pathParams, ...body } = data;
   const url = resolveUrl({ endpoint, pathParams });
+  const authToken = token ?? getAccessToken() ?? undefined;
 
-  try {
-    return await axios.patch(url, body, {
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
-    });
-  } catch (error) {
-    console.error("apiPatchCall error:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      return error.response;
-    }
-    throw error;
-  }
+  return axios.patch(url, body, axiosConfig(authToken));
 };
 
 export const apiDownloadCall = async (
@@ -108,27 +81,50 @@ export const apiDownloadCall = async (
   token?: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> => {
   const url = resolveUrl({ endpoint, pathParams });
+  const authToken = token ?? getAccessToken() ?? undefined;
 
   try {
     const response = await axios.get(url, {
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
+      ...axiosConfig(authToken),
       responseType: "blob",
     });
 
-    if (response.status !== 200) {
-      return { ok: false, message: "Download failed." };
+    const blob = response.data as Blob;
+    const contentType = String(response.headers["content-type"] ?? "");
+    const looksLikePdf =
+      contentType.includes("application/pdf") ||
+      contentType.includes("application/octet-stream") ||
+      (await isPdfBlob(blob));
+
+    if (response.status < 200 || response.status >= 300) {
+      const message = await readBlobMessage(
+        blob,
+        `Download failed (${response.status}).`,
+      );
+      return { ok: false, message };
     }
 
-    const blob = new Blob([response.data], { type: "application/pdf" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    if (!looksLikePdf) {
+      const message = await readBlobMessage(blob, "Server did not return a PDF file.");
+      return { ok: false, message };
+    }
 
+    const pdfBlob =
+      blob.type === "application/pdf"
+        ? blob
+        : new Blob([blob], { type: "application/pdf" });
+
+    saveBlobAsFile(pdfBlob, filename);
     return { ok: true };
   } catch (error) {
-    console.error("apiDownloadCall error:", error);
+    if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+      const message = await readBlobMessage(
+        error.response.data,
+        "Cannot download file.",
+      );
+      return { ok: false, message };
+    }
+
     return { ok: false, message: "Cannot download file." };
   }
 };
@@ -140,16 +136,7 @@ export const apiDeleteCall = async (data: ApiCallData): Promise<AxiosResponse> =
 
   const { endpoint, token, pathParams } = data;
   const url = resolveUrl({ endpoint, pathParams });
+  const authToken = token ?? getAccessToken() ?? undefined;
 
-  try {
-    return await axios.delete(url, {
-      headers: getAuthHeaders(token ?? getAccessToken() ?? undefined),
-    });
-  } catch (error) {
-    console.error("apiDeleteCall error:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      return error.response;
-    }
-    throw error;
-  }
+  return axios.delete(url, axiosConfig(authToken));
 };

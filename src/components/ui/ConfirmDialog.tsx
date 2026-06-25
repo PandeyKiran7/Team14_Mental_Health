@@ -11,6 +11,7 @@ type ConfirmDialogProps = {
   cancelLabel?: string;
   variant?: "danger" | "default";
   loading?: boolean;
+  error?: string | null;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -23,6 +24,7 @@ export default function ConfirmDialog({
   cancelLabel = "Cancel",
   variant = "default",
   loading = false,
+  error,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -41,7 +43,7 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
-        className="relative z-10 w-full max-w-md rounded-xl border border-teal-100 bg-white p-6 shadow-xl"
+        className="relative z-10 w-full max-w-md rounded-xl border border-teal-100 bg-white p-6"
       >
         <button
           type="button"
@@ -69,6 +71,12 @@ export default function ConfirmDialog({
             </p>
           </div>
         </div>
+
+        {error && (
+          <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        )}
 
         <div className="mt-6 flex justify-end gap-3">
           <button

@@ -1,15 +1,33 @@
-import { API_CONSTANTS } from "@/constants/staticConstant";
-import { apiGetCall } from "@/helper/apiService";
+import { isUnauthorizedStatus } from "@/lib/session";
+import {
+  fetchDoctorProfessionalDetails,
+  normalizeDoctorProfessionalDetails,
+} from "@/lib/doctorProfessionalApi";
+
+export type DoctorProfileStatus = "complete" | "missing" | "unauthorized" | "error";
+
+export async function getDoctorProfileStatus(
+  token: string,
+): Promise<DoctorProfileStatus> {
+  const result = await fetchDoctorProfessionalDetails(token);
+
+  if (!result.ok) {
+    if (result.status && isUnauthorizedStatus(result.status)) {
+      return "unauthorized";
+    }
+    return "error";
+  }
+
+  return result.data?.licenseNumber ? "complete" : "missing";
+}
 
 export async function doctorHasProfile(token: string): Promise<boolean> {
-  const response = await apiGetCall({
-    endpoint: "doctor_data",
-    token,
-  });
-
-  return response.status === API_CONSTANTS.success;
+  const status = await getDoctorProfileStatus(token);
+  return status === "complete";
 }
 
-export function getDoctorHomePath(hasProfile: boolean): string {
-  return hasProfile ? "/doctor/dashboard" : "/doctor/profile";
+export function getDoctorHomePath(): string {
+  return "/doctor/dashboard";
 }
+
+export { normalizeDoctorProfessionalDetails };
