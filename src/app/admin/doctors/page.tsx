@@ -1,5 +1,5 @@
-import AdminDoctorsPanel from "@/components/admin/AdminDoctorsPanel";
+import { redirect } from "next/navigation";
 
 export default function AdminDoctorsPage() {
-  return <AdminDoctorsPanel />;
+  redirect("/admin/users?tab=doctors");
 }

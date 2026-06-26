@@ -12,6 +12,7 @@ import {
 } from "@/lib/userApi";
 
 export type Team14DevConsoleApi = {
+  getToken: () => string | null;
   urls: {
     doctors: string;
     users: string;
@@ -36,6 +37,11 @@ function log(label: string, result: unknown) {
 
 export function createDevConsoleApi(): Team14DevConsoleApi {
   return {
+    getToken() {
+      const token = getAccessToken();
+      console.log("[Team14] accessToken:", token);
+      return token;
+    },
     urls: {
       doctors: resolveApiUrl("doctors"),
       users: resolveApiUrl("users"),
@@ -87,8 +93,13 @@ export function registerDevConsoleApi() {
   const api = createDevConsoleApi();
   window.team14Api = api;
 
+  const token = getAccessToken();
+  if (token) {
+    console.log("[Team14] accessToken:", token);
+  }
+
   console.info(
-    "[Team14] Dev API ready. Try: await team14Api.getAllDoctors()",
+    "[Team14] Dev API ready. Try: team14Api.getToken() or await team14Api.getAllDoctors()",
     "\nURLs:",
     api.urls,
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export type ProfileTab = {
@@ -16,6 +16,10 @@ type ProfileTabsProps = {
 
 export default function ProfileTabs({ tabs, defaultTab }: ProfileTabsProps) {
   const [current, setCurrent] = useState(defaultTab ?? tabs[0]?.id ?? "");
+
+  useEffect(() => {
+    if (defaultTab) setCurrent(defaultTab);
+  }, [defaultTab]);
 
   const activeTab = tabs.find((tab) => tab.id === current) ?? tabs[0];
 

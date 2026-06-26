@@ -37,9 +37,29 @@ export function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+/** Client-side JWT expiry check (no signature verification). */
+export function isAccessTokenExpired(token?: string | null): boolean {
+  const value = token ?? getAccessToken();
+  if (!value) return true;
+
+  try {
+    const segment = value.split(".")[1];
+    if (!segment) return false;
+
+    const base64 = segment.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(base64)) as { exp?: number };
+    if (typeof payload.exp !== "number") return false;
+
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return false;
+  }
+}
+
 export function setAccessToken(accessToken: string) {
   if (typeof window === "undefined") return;
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  console.log("[auth] accessToken:", accessToken);
   window.dispatchEvent(new Event("auth-change"));
 }
 

@@ -56,6 +56,7 @@ export default function DoctorFinancePanel() {
 
       {!loading && !error && doctors.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-teal-100 bg-white">
+          <div className="overflow-x-auto scrollbar-hide">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-teal-100 bg-teal-50/60">
@@ -87,6 +88,7 @@ export default function DoctorFinancePanel() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

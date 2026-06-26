@@ -38,7 +38,7 @@ export default function PatientMedicalSetupModal({
           </p>
         </div>
 
-        <div className="overflow-y-auto px-6 py-5">
+        <div className="overflow-y-auto scrollbar-hide px-6 py-5">
           <PatientMedicalDataForm mandatory onComplete={onComplete} />
         </div>
       </div>

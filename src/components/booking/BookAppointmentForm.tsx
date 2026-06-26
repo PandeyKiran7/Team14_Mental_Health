@@ -16,7 +16,16 @@ type BookAppointmentFormProps = {
   onBooked: () => void;
 };
 
+function todayLocalDateValue(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function BookAppointmentForm({ onBooked }: BookAppointmentFormProps) {
+  const minBookingDate = todayLocalDateValue();
   const [doctorUserId, setDoctorUserId] = useState("");
   const [bookingDate, setBookingDate] = useState("");
   const [startTime, setStartTime] = useState("09:00");
@@ -75,6 +84,24 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
       return;
     }
 
+    if (!bookingDate) {
+      setError("Please select a date.");
+      setSaving(false);
+      return;
+    }
+
+    if (bookingDate < minBookingDate) {
+      setError("Booking date cannot be in the past.");
+      setSaving(false);
+      return;
+    }
+
+    if (endTime <= startTime) {
+      setError("End time must be greater than start time.");
+      setSaving(false);
+      return;
+    }
+
     try {
       const pathDoctorId = selectedDoctor.bookingDoctorId;
       const payload = {
@@ -102,9 +129,7 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
       if (!isApiSuccess(response.status)) {
         const apiError = resolveApiError(response, "Failed to book appointment.");
         if (response.status === 404 && apiError.toLowerCase().includes("doctor")) {
-          setError(
-            "This doctor is not available for booking yet. They may need to complete their professional profile first.",
-          );
+          setError(response.data.message);
         } else {
           setError(apiError);
         }
@@ -162,6 +187,7 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
             <input
               type="date"
               required
+              min={minBookingDate}
               value={bookingDate}
               onChange={(e) => setBookingDate(e.target.value)}
               className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"

@@ -1,5 +1,5 @@
-import AdminRegisterDoctorForm from "@/components/admin/AdminRegisterDoctorForm";
+import { redirect } from "next/navigation";
 
-export default function AdminRegisterDoctorPage() {
-  return <AdminRegisterDoctorForm />;
+export default function AdminRegisterDoctorRedirectPage() {
+  redirect("/admin/users/register/doctor");
 }

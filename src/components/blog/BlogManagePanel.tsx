@@ -108,6 +108,7 @@ export default function BlogManagePanel({
 
       {!loading && !error && blogs.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-teal-100 bg-white">
+          <div className="overflow-x-auto scrollbar-hide">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-teal-50 bg-teal-50/40 text-zinc-600">
               <tr>
@@ -153,6 +154,7 @@ export default function BlogManagePanel({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

@@ -31,14 +31,17 @@ type DashboardShellProps = {
 const ROLE_CONFIG = {
   patient: {
     items: PATIENT_NAV_ITEMS,
+    quickActions: [] as const,
     ...PATIENT_SIDEBAR_META,
   },
   doctor: {
     items: DOCTOR_NAV_ITEMS,
+    quickActions: [] as const,
     ...DOCTOR_SIDEBAR_META,
   },
   "content-manager": {
     items: CONTENT_MANAGER_NAV_ITEMS,
+    quickActions: [] as const,
     ...CONTENT_MANAGER_SIDEBAR_META,
   },
 } as const;
@@ -65,6 +68,7 @@ export default function DashboardShell({
         panelSubtitle={config.panelSubtitle}
         panelIcon={config.panelIcon}
         items={config.items}
+        quickActions={[...config.quickActions]}
       />
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">

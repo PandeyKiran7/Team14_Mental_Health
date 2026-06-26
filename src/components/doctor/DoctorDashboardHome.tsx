@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import DoctorPendingAppointments from "@/components/doctor/DoctorPendingAppointments";
-import PatientMedicalLookup from "@/components/doctor/PatientMedicalLookup";
 import DashboardHero, { getTimeGreeting } from "@/components/dashboard/DashboardHero";
 import ApiMessage from "@/components/ui/ApiMessage";
 import {
@@ -149,12 +148,11 @@ export default function DoctorDashboardHome() {
       <DashboardHero
         greeting={getTimeGreeting()}
         name={displayName}
-        description="Manage your profile, review appointments, and view patient medical records."
+        description="Manage your profile, review appointments, and view patient details."
       />
 
       <DoctorProfileSummary profile={profile} error={profileError} />
       <DoctorPendingAppointments />
-      <PatientMedicalLookup />
     </div>
   );
 }

@@ -7,8 +7,9 @@ import {
   CONTENT_MANAGER_NAV_ITEMS,
   CONTENT_MANAGER_SIDEBAR_META,
 } from "@/components/layout/contentManagerNav";
-import { getAccessToken, getStoredUser } from "@/lib/auth";
+import { getStoredUser } from "@/lib/auth";
 import { canManageBlogs } from "@/lib/roleAccess";
+import { redirectIfSessionInvalid } from "@/lib/session";
 
 const PAGE_META: Record<string, { title: string; subtitle?: string }> = {
   "/content-manager/blogs": {
@@ -34,11 +35,12 @@ export default function ContentManagerLayoutClient({
   const pathname = usePathname();
 
   useEffect(() => {
-    const token = getAccessToken();
+    if (redirectIfSessionInvalid()) return;
+
     const role = getStoredUser()?.role;
 
-    if (!token || !canManageBlogs(role)) {
-      router.replace("/login");
+    if (!canManageBlogs(role)) {
+      router.replace("/");
     }
   }, [router]);
 

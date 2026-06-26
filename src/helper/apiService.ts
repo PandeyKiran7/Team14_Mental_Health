@@ -2,6 +2,7 @@ import axios, { type AxiosResponse } from "axios";
 import { API_ENDPOINTS, resolveApiUrl } from "./apiList";
 import { getAccessToken } from "@/lib/auth";
 import { isPdfBlob, readBlobMessage, saveBlobAsFile } from "@/lib/downloadBlob";
+import { maybeHandleSessionExpired } from "@/lib/session";
 
 export type ApiCallData = {
   endpoint: keyof typeof API_ENDPOINTS;
@@ -32,7 +33,9 @@ export const apiFormPostCall = async (
   const url = resolveApiUrl(endpoint);
   const authToken = token ?? getAccessToken() ?? undefined;
 
-  return axios.post(url, formData, axiosConfig(authToken));
+  const response = await axios.post(url, formData, axiosConfig(authToken));
+  maybeHandleSessionExpired(response.status, Boolean(authToken));
+  return response;
 };
 
 export const apiPostCall = async (data: ApiCallData) => {
@@ -44,7 +47,9 @@ export const apiPostCall = async (data: ApiCallData) => {
   const url = resolveUrl({ endpoint, pathParams });
   const authToken = token ?? getAccessToken() ?? undefined;
 
-  return axios.post(url, body, axiosConfig(authToken));
+  const response = await axios.post(url, body, axiosConfig(authToken));
+  maybeHandleSessionExpired(response.status, Boolean(authToken));
+  return response;
 };
 
 export const apiGetCall = async (data: ApiCallData) => {
@@ -56,10 +61,12 @@ export const apiGetCall = async (data: ApiCallData) => {
   const url = resolveUrl({ endpoint, pathParams });
   const authToken = token ?? getAccessToken() ?? undefined;
 
-  return axios.get(url, {
+  const response = await axios.get(url, {
     ...axiosConfig(authToken),
     params,
   });
+  maybeHandleSessionExpired(response.status, Boolean(authToken));
+  return response;
 };
 
 export const apiPatchCall = async (data: ApiCallData) => {
@@ -71,7 +78,9 @@ export const apiPatchCall = async (data: ApiCallData) => {
   const url = resolveUrl({ endpoint, pathParams });
   const authToken = token ?? getAccessToken() ?? undefined;
 
-  return axios.patch(url, body, axiosConfig(authToken));
+  const response = await axios.patch(url, body, axiosConfig(authToken));
+  maybeHandleSessionExpired(response.status, Boolean(authToken));
+  return response;
 };
 
 export const apiDownloadCall = async (
@@ -88,6 +97,8 @@ export const apiDownloadCall = async (
       ...axiosConfig(authToken),
       responseType: "blob",
     });
+
+    maybeHandleSessionExpired(response.status, Boolean(authToken));
 
     const blob = response.data as Blob;
     const contentType = String(response.headers["content-type"] ?? "");
@@ -138,5 +149,7 @@ export const apiDeleteCall = async (data: ApiCallData): Promise<AxiosResponse> =
   const url = resolveUrl({ endpoint, pathParams });
   const authToken = token ?? getAccessToken() ?? undefined;
 
-  return axios.delete(url, axiosConfig(authToken));
+  const response = await axios.delete(url, axiosConfig(authToken));
+  maybeHandleSessionExpired(response.status, Boolean(authToken));
+  return response;
 };

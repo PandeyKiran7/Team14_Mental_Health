@@ -67,9 +67,6 @@ export default function AboutPage() {
 
       {/* Hero */}
       <div className="rounded-2xl bg-gradient-to-br from-teal-600 to-teal-800 px-8 py-16 text-white">
-        <p className="text-sm font-medium uppercase tracking-wide text-teal-100">
-          Team 14 · Diabetes Management System
-        </p>
         <h1 className="mt-4 max-w-2xl text-4xl font-bold leading-tight md:text-5xl">
           Built by clinicians, engineers, and patients — together.
         </h1>

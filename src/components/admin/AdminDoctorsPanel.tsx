@@ -12,7 +12,11 @@ import AdminDoctorProfessionalModal from "@/components/admin/AdminDoctorProfessi
 import AdminUserEditModal from "@/components/admin/AdminUserEditModal";
 import UserStatusModal from "@/components/admin/UserStatusModal";
 
-export default function AdminDoctorsPanel() {
+export default function AdminDoctorsPanel({
+  hideRegisterLink = false,
+}: {
+  hideRegisterLink?: boolean;
+}) {
   const [doctors, setDoctors] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,14 +55,16 @@ export default function AdminDoctorsPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <Link
-          href="/admin/doctors/register"
-          className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
-        >
-          Register doctor
-        </Link>
-      </div>
+      {!hideRegisterLink && (
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <Link
+            href="/admin/users/register/doctor"
+            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+          >
+            Register doctor
+          </Link>
+        </div>
+      )}
 
       {loading && (
         <div className="rounded-xl border border-teal-100 bg-white p-8 text-center">
@@ -80,6 +86,7 @@ export default function AdminDoctorsPanel() {
 
       {!loading && !error && doctors.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-teal-100 bg-white">
+          <div className="overflow-x-auto scrollbar-hide">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-teal-100 bg-teal-50/60">
@@ -130,6 +137,7 @@ export default function AdminDoctorsPanel() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

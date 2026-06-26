@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EyeIcon } from "@phosphor-icons/react";
+import { EyeIcon, PencilIcon } from "@phosphor-icons/react";
 import {
   getNetworkErrorMessage,
   isApiSuccess,
@@ -12,6 +12,8 @@ import { getAccessToken } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { normalizeUsers, type AdminUser } from "@/types/admin";
 import UserDetailModal from "@/components/admin/UserDetailModal";
+import AdminUserEditModal from "@/components/admin/AdminUserEditModal";
+import UserStatusModal from "@/components/admin/UserStatusModal";
 import ApiMessage from "@/components/ui/ApiMessage";
 
 const ROLE_STYLES: Record<string, string> = {
@@ -27,6 +29,8 @@ export default function ContentManagersTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewUserId, setViewUserId] = useState<number | null>(null);
+  const [editUser, setEditUser] = useState<AdminUser | null>(null);
+  const [statusUser, setStatusUser] = useState<AdminUser | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -85,7 +89,7 @@ export default function ContentManagersTable() {
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-teal-100 bg-white">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-hide">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-teal-100 bg-teal-50/60">
@@ -119,26 +123,39 @@ export default function ContentManagersTable() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span
+                    <button
+                      type="button"
+                      title="Update status"
+                      onClick={() => setStatusUser(user)}
                       className={cn(
-                        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+                        "rounded-full px-2.5 py-0.5 text-xs font-medium hover:opacity-80",
                         user.isActive === "ACTIVE"
                           ? "bg-green-100 text-green-700"
                           : "bg-zinc-100 text-zinc-500",
                       )}
                     >
                       {user.isActive}
-                    </span>
+                    </button>
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      title="View details"
-                      onClick={() => setViewUserId(user.userId)}
-                      className="cursor-pointer rounded border border-teal-200 p-2 hover:bg-teal-50"
-                    >
-                      <EyeIcon size={16} className="text-teal-800" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        title="View details"
+                        onClick={() => setViewUserId(user.userId)}
+                        className="cursor-pointer rounded border border-teal-200 p-2 hover:bg-teal-50"
+                      >
+                        <EyeIcon size={16} className="text-teal-800" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Edit account"
+                        onClick={() => setEditUser(user)}
+                        className="cursor-pointer rounded border border-teal-200 p-2 hover:bg-teal-50"
+                      >
+                        <PencilIcon size={16} className="text-teal-800" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -148,6 +165,18 @@ export default function ContentManagersTable() {
       </div>
 
       <UserDetailModal userId={viewUserId} onClose={() => setViewUserId(null)} />
+
+      <AdminUserEditModal
+        user={editUser}
+        onClose={() => setEditUser(null)}
+        onUpdated={load}
+      />
+
+      <UserStatusModal
+        user={statusUser}
+        onClose={() => setStatusUser(null)}
+        onUpdated={load}
+      />
     </>
   );
 }

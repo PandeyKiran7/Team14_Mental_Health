@@ -16,9 +16,6 @@ export default function HeroSection() {
 
         <div className="relative z-10 grid items-center gap-10 lg:grid-cols-2">
           <div className="text-center lg:text-left">
-            <p className="inline-flex rounded-full bg-white/15 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-teal-100">
-              Team 14 · CT071-3-3-DDAC
-            </p>
             <h1 className="mt-4 text-3xl font-bold leading-tight md:text-5xl">
               {hero.title}
             </h1>

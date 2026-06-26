@@ -7,7 +7,7 @@ import DoctorProfessionalSetupModal from "@/components/doctor/DoctorProfessional
 import ApiMessage from "@/components/ui/ApiMessage";
 import { getDoctorProfileStatus } from "@/lib/doctorProfile";
 import { getAccessToken, getStoredUser } from "@/lib/auth";
-import { handleSessionExpired } from "@/lib/session";
+import { handleSessionExpired, redirectIfSessionInvalid } from "@/lib/session";
 
 const PAGE_META: Record<string, { title?: string; subtitle?: string }> = {
   "/doctor/dashboard": { title: "Overview" },
@@ -32,11 +32,12 @@ export default function DoctorLayoutClient({
     async function verifyAccess() {
       setGuardError(null);
 
-      const token = getAccessToken();
+      if (redirectIfSessionInvalid()) return;
+
       const user = getStoredUser();
 
-      if (!token || !user) {
-        router.replace("/login");
+      if (!user) {
+        handleSessionExpired();
         return;
       }
 
@@ -45,7 +46,7 @@ export default function DoctorLayoutClient({
         return;
       }
 
-      const profileStatus = await getDoctorProfileStatus(token);
+      const profileStatus = await getDoctorProfileStatus(getAccessToken()!);
 
       if (cancelled) return;
 

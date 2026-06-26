@@ -108,7 +108,7 @@ export default function AdminDoctorFinanceModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto px-6 py-5">
+        <div className="overflow-y-auto scrollbar-hide px-6 py-5">
           {loading && <p className="text-sm text-zinc-500">Loading finance details…</p>}
 
           {!loading && error && !details && (
@@ -135,7 +135,7 @@ export default function AdminDoctorFinanceModal({
 
               <div>
                 <h3 className="mb-3 text-sm font-semibold text-teal-800">Booking payments</h3>
-                <div className="overflow-x-auto rounded-xl border border-teal-100">
+                <div className="overflow-x-auto scrollbar-hide rounded-xl border border-teal-100">
                   <table className="w-full min-w-[640px] text-left text-sm">
                     <thead>
                       <tr className="border-b border-teal-100 bg-teal-50/60">

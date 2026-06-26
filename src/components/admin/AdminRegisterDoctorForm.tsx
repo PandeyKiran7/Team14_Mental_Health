@@ -65,7 +65,7 @@ export default function AdminRegisterDoctorForm() {
       return;
     }
     if (!MOBILE_PATTERN.test(account.mobileNumber.trim())) {
-      setError("Mobile number must be 7–15 digits.");
+      setError("Mobile number must be 10 digits.");
       return;
     }
     if (!account.dateOfBirth) {
@@ -102,7 +102,7 @@ export default function AdminRegisterDoctorForm() {
       );
 
       setTimeout(() => {
-        router.push("/admin/doctors");
+        router.push("/admin/users?tab=doctors");
       }, 2500);
     } catch (err) {
       setError(getNetworkErrorMessage(err));
@@ -115,7 +115,7 @@ export default function AdminRegisterDoctorForm() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-end">
         <Link
-          href="/admin/doctors"
+          href="/admin/users?tab=doctors"
           className="text-sm font-medium text-teal-700 underline hover:text-teal-900"
         >
           Back to doctors
@@ -192,7 +192,7 @@ export default function AdminRegisterDoctorForm() {
               value={account.address}
               onChange={(e) => updateAccount("address", e.target.value)}
             />
-            <div className="sm:col-span-2">
+            {/* <div className="sm:col-span-2">
               <label htmlFor="doctorProfileImage" className="mb-1 block text-sm font-medium text-zinc-700">
                 Profile picture
               </label>
@@ -203,7 +203,7 @@ export default function AdminRegisterDoctorForm() {
                 onChange={(e) => setProfileImage(e.target.files?.[0] ?? null)}
                 className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-teal-800"
               />
-            </div>
+            </div> */}
           </div>
         </section>
 

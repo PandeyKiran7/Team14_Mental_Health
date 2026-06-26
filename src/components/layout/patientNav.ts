@@ -18,6 +18,11 @@ export const PATIENT_NAV_ITEMS: DashboardNavItem[] = [
     icon: CalendarIcon,
   },
   {
+    href: "/patient/medical-profile",
+    label: "Medical profile",
+    icon: HeartbeatIcon,
+  },
+  {
     href: "/patient/profile",
     label: "My Profile",
     icon: UserCircleIcon,

@@ -174,7 +174,7 @@ export default function UserAccountForm() {
     }
 
     if (!/^[0-9]{7,15}$/.test(form.mobileNumber.trim())) {
-      setError("Mobile number must be 7–15 digits.");
+      setError("Mobile number must be 10 digits.");
       setSaving(false);
       return;
     }
@@ -242,13 +242,13 @@ export default function UserAccountForm() {
     >
       <ProfileAccountHeader user={user} className="mb-6" />
 
-      {isAdmin && !editing && (
+      {/* {isAdmin && !editing && (
         <ApiMessage
           variant="info"
           className="mb-4"
           message="Admin account details are view-only here. Use the Users page to manage other accounts."
         />
-      )}
+      )} */}
 
       {loading ? (
         <p className="text-sm text-zinc-500">Loading account details…</p>

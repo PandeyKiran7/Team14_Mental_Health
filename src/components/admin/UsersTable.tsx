@@ -1,22 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EyeIcon, PencilIcon, TrashIcon } from "@phosphor-icons/react";
-import { apiDeleteCall, apiGetCall } from "@/helper/apiService";
+import { EyeIcon, PencilIcon } from "@phosphor-icons/react";
+import { apiGetCall } from "@/helper/apiService";
 import {
   getNetworkErrorMessage,
   isApiSuccess,
-  resolveAdminMutationError,
   resolveApiError,
 } from "@/helper/apiErrors";
-import { getAccessToken, getStoredUser } from "@/lib/auth";
+import { getAccessToken } from "@/lib/auth";
 import { normalizeUsers, type AdminUser } from "@/types/admin";
 import { cn } from "@/lib/utils";
 import AdminUserEditModal from "@/components/admin/AdminUserEditModal";
 import UserDetailModal from "@/components/admin/UserDetailModal";
 import UserStatusModal from "@/components/admin/UserStatusModal";
-import ApiMessage from "@/components/ui/ApiMessage";
-import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 const ROLE_STYLES: Record<string, string> = {
   admin: "bg-purple-100 text-purple-700",
@@ -64,58 +61,11 @@ export default function UsersTable({
   const [viewUserId, setViewUserId] = useState<number | null>(null);
   const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
   const [statusTarget, setStatusTarget] = useState<AdminUser | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     reload();
     onUsersChange?.();
   }, [reload, onUsersChange]);
-
-  async function confirmDelete() {
-    if (!deleteTarget) return;
-
-    const currentUser = getStoredUser();
-    if (currentUser?.userId === deleteTarget.userId) {
-      setDeleteError("You cannot delete your own admin account.");
-      return;
-    }
-
-    const user = deleteTarget;
-    setDeletingId(user.userId);
-    setDeleteError(null);
-    setActionError(null);
-
-    try {
-      const response = await apiDeleteCall({
-        endpoint: "delete_user",
-        pathParams: { userId: user.userId },
-        token: getAccessToken() ?? undefined,
-      });
-
-      if (!isApiSuccess(response.status)) {
-        setDeleteError(
-          resolveAdminMutationError(response, "Failed to delete user."),
-        );
-        return;
-      }
-
-      setDeleteTarget(null);
-      setDeleteError(null);
-      refresh();
-    } catch (error) {
-      setDeleteError(getNetworkErrorMessage(error));
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
-  function openDeleteDialog(user: AdminUser) {
-    setDeleteError(null);
-    setDeleteTarget(user);
-  }
 
   if (loading) {
     return (
@@ -142,13 +92,12 @@ export default function UsersTable({
   }
 
   const displayUsers = compact ? users.slice(0, 5) : users;
+  const showActions = !compact;
 
   return (
     <>
-      {actionError && <ApiMessage message={actionError} className="mb-4" />}
-
       <div className="overflow-hidden rounded-xl border border-teal-100 bg-white">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-hide">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-teal-100 bg-teal-50/60">
@@ -157,7 +106,9 @@ export default function UsersTable({
                 <th className="px-4 py-3 font-semibold text-teal-900">Email</th>
                 <th className="px-4 py-3 font-semibold text-teal-900">Role</th>
                 <th className="px-4 py-3 font-semibold text-teal-900">Status</th>
-                <th className="px-4 py-3 font-semibold text-teal-900">Actions</th>
+                {showActions && (
+                  <th className="px-4 py-3 font-semibold text-teal-900">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -175,52 +126,55 @@ export default function UsersTable({
                     <RoleBadge role={user.role} />
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      title="Update status"
-                      onClick={() => setStatusTarget(user)}
-                      className={cn(
-                        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium hover:opacity-80",
-                        user.isActive === "ACTIVE"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-zinc-100 text-zinc-500",
-                      )}
-                    >
-                      {user.isActive}
-                    </button>
+                    {showActions ? (
+                      <button
+                        type="button"
+                        title="Update status"
+                        onClick={() => setStatusTarget(user)}
+                        className={cn(
+                          "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium hover:opacity-80",
+                          user.isActive === "ACTIVE"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-zinc-100 text-zinc-500",
+                        )}
+                      >
+                        {user.isActive}
+                      </button>
+                    ) : (
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+                          user.isActive === "ACTIVE"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-zinc-100 text-zinc-500",
+                        )}
+                      >
+                        {user.isActive}
+                      </span>
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-zinc-500">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        title="View details"
-                        onClick={() => setViewUserId(user.userId)}
-                        className="cursor-pointer rounded border border-teal-200 p-2 hover:bg-teal-50"
-                      >
-                        <EyeIcon size={16} className="text-teal-800" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Set account status"
-                        onClick={() => setEditTarget(user)}
-                        className="cursor-pointer rounded border border-teal-200 p-2 hover:bg-teal-50"
-                      >
-                        <PencilIcon size={16} className="text-teal-800" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Delete user"
-                        disabled={
-                          deletingId === user.userId ||
-                          getStoredUser()?.userId === user.userId
-                        }
-                        onClick={() => openDeleteDialog(user)}
-                        className="cursor-pointer rounded border border-red-200 p-2 hover:bg-red-50 disabled:opacity-50"
-                      >
-                        <TrashIcon size={16} className="text-red-700" />
-                      </button>
-                    </div>
-                  </td>
+                  {showActions && (
+                    <td className="px-4 py-3 text-zinc-500">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          title="View details"
+                          onClick={() => setViewUserId(user.userId)}
+                          className="cursor-pointer rounded border border-teal-200 p-2 hover:bg-teal-50"
+                        >
+                          <EyeIcon size={16} className="text-teal-800" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Set account status"
+                          onClick={() => setEditTarget(user)}
+                          className="cursor-pointer rounded border border-teal-200 p-2 hover:bg-teal-50"
+                        >
+                          <PencilIcon size={16} className="text-teal-800" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -233,38 +187,21 @@ export default function UsersTable({
         )}
       </div>
 
-      <UserDetailModal userId={viewUserId} onClose={() => setViewUserId(null)} />
-      <AdminUserEditModal
-        user={editTarget}
-        onClose={() => setEditTarget(null)}
-        onUpdated={refresh}
-      />
-      <UserStatusModal
-        user={statusTarget}
-        onClose={() => setStatusTarget(null)}
-        onUpdated={refresh}
-      />
-      <ConfirmDialog
-        open={deleteTarget !== null}
-        title="Delete user?"
-        message={
-          deleteTarget
-            ? `Delete ${deleteTarget.firstName} ${deleteTarget.lastName}? This action cannot be undone.`
-            : ""
-        }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        variant="danger"
-        loading={deletingId !== null}
-        error={deleteError}
-        onConfirm={() => void confirmDelete()}
-        onCancel={() => {
-          if (deletingId === null) {
-            setDeleteTarget(null);
-            setDeleteError(null);
-          }
-        }}
-      />
+      {showActions && (
+        <>
+          <UserDetailModal userId={viewUserId} onClose={() => setViewUserId(null)} />
+          <AdminUserEditModal
+            user={editTarget}
+            onClose={() => setEditTarget(null)}
+            onUpdated={refresh}
+          />
+          <UserStatusModal
+            user={statusTarget}
+            onClose={() => setStatusTarget(null)}
+            onUpdated={refresh}
+          />
+        </>
+      )}
     </>
   );
 }

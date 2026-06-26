@@ -7,6 +7,7 @@ import {
   resolveApiError,
 } from "@/helper/apiErrors";
 import BookingReviewDialogs from "@/components/booking/BookingReviewDialogs";
+import DoctorPatientMedicalModal from "@/components/doctor/DoctorPatientMedicalModal";
 import { useBookingReview } from "@/hooks/useBookingReview";
 import { getAccessToken } from "@/lib/auth";
 import { fetchMyBookings } from "@/lib/myBookings";
@@ -18,6 +19,10 @@ export default function DoctorPendingAppointments() {
   const [pending, setPending] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewPatient, setViewPatient] = useState<{
+    userId: number;
+    name: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,7 +69,7 @@ export default function DoctorPendingAppointments() {
     <div className="rounded-xl border border-teal-100 bg-white p-6">
       <h2 className="text-lg font-semibold text-teal-800">Appointments</h2>
       <p className="mt-1 text-sm text-zinc-500">
-        Approve or deny pending booking requests from your patients.
+        Review patient details and approve or deny booking requests.
       </p>
 
       {loading && <p className="mt-4 text-sm text-zinc-500">Loading…</p>}
@@ -90,7 +95,20 @@ export default function DoctorPendingAppointments() {
                 <p className="mt-1 text-xs text-zinc-500">{booking.notes}</p>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={review.actionId === booking.id}
+                onClick={() =>
+                  setViewPatient({
+                    userId: booking.patient.id,
+                    name: booking.patient.name,
+                  })
+                }
+                className="rounded-lg border border-teal-200 bg-white px-4 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-50 disabled:opacity-60"
+              >
+                View
+              </button>
               <button
                 type="button"
                 disabled={review.actionId === booking.id}
@@ -119,6 +137,12 @@ export default function DoctorPendingAppointments() {
         onConfirmDeny={() => void review.confirmDeny()}
         onCancelApprove={review.cancelApprove}
         onCancelDeny={review.cancelDeny}
+      />
+
+      <DoctorPatientMedicalModal
+        userId={viewPatient?.userId ?? null}
+        patientName={viewPatient?.name}
+        onClose={() => setViewPatient(null)}
       />
     </div>
   );

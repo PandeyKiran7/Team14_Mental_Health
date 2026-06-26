@@ -24,16 +24,6 @@ const NAV_ITEMS = [
     icon: UsersIcon,
   },
   {
-    href: "/admin/doctors",
-    label: "Doctor",
-    icon: UsersIcon,
-  },
-  {
-    href: "/admin/patients",
-    label: "Patient",
-    icon: UsersIcon,
-  },
-  {
     href: "/admin/content-managers",
     label: "Internal managers",
     icon: BookOpenIcon,
@@ -90,10 +80,15 @@ export default function AdminSidebar({ open, onClose }: AdminSidebarProps) {
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide p-3">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active =
-              pathname === href || pathname.startsWith(`${href}/`);
+              href === "/admin/users"
+                ? pathname === href ||
+                  pathname.startsWith("/admin/users/") ||
+                  pathname.startsWith("/admin/doctors") ||
+                  pathname.startsWith("/admin/patients")
+                : pathname === href || pathname.startsWith(`${href}/`);
 
             return (
               <Link

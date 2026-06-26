@@ -7,11 +7,12 @@ function extractString(value: unknown): string | null {
   return null;
 }
 
-function formatZodIssues(details: unknown): string | null {
-  if (!Array.isArray(details) || details.length === 0) return null;
+function formatFieldIssues(items: unknown): string | null {
+  if (!Array.isArray(items) || items.length === 0) return null;
 
-  const messages = details
+  const messages = items
     .map((item) => {
+      if (typeof item === "string" && item.trim()) return item.trim();
       if (!item || typeof item !== "object") return null;
       const issue = item as { message?: string; path?: (string | number)[] };
       if (typeof issue.message !== "string") return null;
@@ -26,6 +27,10 @@ function formatZodIssues(details: unknown): string | null {
     .filter((value): value is string => Boolean(value));
 
   return messages.length > 0 ? messages.join(" ") : null;
+}
+
+function formatZodIssues(details: unknown): string | null {
+  return formatFieldIssues(details);
 }
 
 export function isApiSuccess(status: number): boolean {
@@ -102,12 +107,8 @@ export function getApiErrorMessage(
   if (fromData) return fromData;
   if (fromMessage) return fromMessage;
 
-  if (Array.isArray(record.errors)) {
-    const joined = record.errors
-      .filter((entry): entry is string => typeof entry === "string")
-      .join(" ");
-    if (joined) return joined;
-  }
+  const fromErrors = formatFieldIssues(record.errors);
+  if (fromErrors) return fromErrors;
 
   return resolvedFallback;
 }

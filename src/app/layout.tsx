@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import DevConsoleApi from "@/components/DevConsoleApi";
+import SessionMonitor from "@/components/auth/SessionMonitor";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,6 +31,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
     >
       <body className="flex min-h-screen flex-col">
+        <SessionMonitor />
         {process.env.NODE_ENV === "development" ? <DevConsoleApi /> : null}
         {children}
       </body>

@@ -7,12 +7,13 @@ import PatientMedicalSetupModal from "@/components/patient/PatientMedicalSetupMo
 import ApiMessage from "@/components/ui/ApiMessage";
 import { getAccessToken, getStoredUser } from "@/lib/auth";
 import { getPatientProfileStatus } from "@/lib/patientProfile";
-import { handleSessionExpired } from "@/lib/session";
+import { handleSessionExpired, redirectIfSessionInvalid } from "@/lib/session";
 
 const PAGE_META: Record<string, { title?: string; subtitle?: string }> = {
   "/patient/dashboard": { title: "Dashboard" },
   "/patient/bookings": { title: "Appointments" },
   "/patient/profile": { title: "Patient profile" },
+  "/patient/medical-profile": { title: "Medical profile" },
 };
 
 export default function PatientLayoutClient({
@@ -32,11 +33,12 @@ export default function PatientLayoutClient({
     async function verifyAccess() {
       setGuardError(null);
 
-      const token = getAccessToken();
+      if (redirectIfSessionInvalid()) return;
+
       const user = getStoredUser();
 
-      if (!token || !user) {
-        router.replace("/login");
+      if (!user) {
+        handleSessionExpired();
         return;
       }
 
@@ -45,7 +47,7 @@ export default function PatientLayoutClient({
         return;
       }
 
-      const status = await getPatientProfileStatus(token);
+      const status = await getPatientProfileStatus(getAccessToken()!);
 
       if (cancelled) return;
 

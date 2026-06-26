@@ -7,10 +7,14 @@ import FormButton from "@/components/formElements/FormButton";
 import FormInput from "@/components/formElements/FormInput";
 import FormPassword from "@/components/formElements/FormPassword";
 import FormSelect from "@/components/formElements/FormSelect";
-import { API_CONSTANTS } from "@/constants/staticConstant";
-import { getApiErrorMessage } from "@/helper/apiErrors";
+import {
+  getNetworkErrorMessage,
+  isApiSuccess,
+  resolveApiError,
+} from "@/helper/apiErrors";
 import { apiFormPostCall } from "@/helper/apiService";
 import { getAccessToken } from "@/lib/auth";
+import ApiMessage from "@/components/ui/ApiMessage";
 
 const genderOptions = [
   { value: "FEMALE", label: "Female" },
@@ -22,7 +26,7 @@ const NAME_PATTERN = /^[A-Za-z\s]{2,50}$/;
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
 const MOBILE_PATTERN = /^[0-9]{7,15}$/;
 
-export default function AdminRegisterContentManagerForm() {
+export default function AdminRegisterPatientForm() {
   const router = useRouter();
   const [account, setAccount] = useState({
     firstName: "",
@@ -32,12 +36,12 @@ export default function AdminRegisterContentManagerForm() {
     password: "",
     mobileNumber: "",
     address: "",
-    gender: "FEMALE",
+    gender: "MALE",
     dateOfBirth: "",
   });
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [profileImage, setProfileImage] = useState<File | null>(null);
 
   function updateAccount(field: keyof typeof account, value: string) {
     setAccount((prev) => ({ ...prev, [field]: value }));
@@ -46,6 +50,7 @@ export default function AdminRegisterContentManagerForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
     if (
       !NAME_PATTERN.test(account.firstName.trim()) ||
@@ -81,24 +86,24 @@ export default function AdminRegisterContentManagerForm() {
       formData.append("mobileNumber", account.mobileNumber.trim());
       formData.append("gender", account.gender);
       formData.append("dateOfBirth", account.dateOfBirth);
-      // DB role enum uses INTERNAL_MANAGER (content manager accounts)
-      formData.append("role", "INTERNAL_MANAGER");
-      if (account.address.trim()) {
-        formData.append("address", account.address.trim());
-      }
-      if (profileImage) {
-        formData.append("userProfile", profileImage);
-      }
+      formData.append("role", "PATIENT");
+      if (account.address.trim()) formData.append("address", account.address.trim());
 
-      const response = await apiFormPostCall("register", formData, token);
-      if (response.status !== 201 && response.status !== API_CONSTANTS.success) {
-        setError(getApiErrorMessage(response.data, "Failed to create internal manager account."));
+      const registerRes = await apiFormPostCall("register", formData, token);
+      if (!isApiSuccess(registerRes.status)) {
+        setError(resolveApiError(registerRes, "Failed to create patient account."));
         return;
       }
 
-      router.push("/admin/content-managers");
-    } catch {
-      setError("Cannot reach backend.");
+      setSuccess(
+        `Patient account created for ${account.email}. Share the temporary password with the patient. They can log in and complete their medical profile on the patient dashboard.`,
+      );
+
+      setTimeout(() => {
+        router.push("/admin/users?tab=patients");
+      }, 2500);
+    } catch (err) {
+      setError(getNetworkErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -108,10 +113,10 @@ export default function AdminRegisterContentManagerForm() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-end">
         <Link
-          href="/admin/content-managers"
+          href="/admin/users?tab=patients"
           className="text-sm font-medium text-teal-700 underline hover:text-teal-900"
         >
-          Back to internal managers
+          Back to patients
         </Link>
       </div>
 
@@ -153,7 +158,7 @@ export default function AdminRegisterContentManagerForm() {
               value={account.password}
               onChange={(e) => updateAccount("password", e.target.value)}
               required
-              hint="Share this with the internal manager for first login. Example: Test@1234"
+              hint="Share this with the patient for first login. Example: Test@1234"
             />
             <FormInput
               name="mobileNumber"
@@ -185,25 +190,14 @@ export default function AdminRegisterContentManagerForm() {
               value={account.address}
               onChange={(e) => updateAccount("address", e.target.value)}
             />
-            {/* <div className="sm:col-span-2">
-              <label htmlFor="managerProfileImage" className="mb-1 block text-sm font-medium text-zinc-700">
-                Profile picture
-              </label>
-              <input
-                id="managerProfileImage"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setProfileImage(e.target.files?.[0] ?? null)}
-                className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-teal-800"
-              />
-            </div> */}
           </div>
         </section>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <ApiMessage message={error} />}
+        {success && <ApiMessage variant="success" message={success} />}
 
-        <FormButton type="submit" disabled={loading}>
-          {loading ? "Creating account…" : "Register internal manager"}
+        <FormButton type="submit" disabled={loading || Boolean(success)}>
+          {loading ? "Creating account…" : "Create patient account"}
         </FormButton>
       </form>
     </div>

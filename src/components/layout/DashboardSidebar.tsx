@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Suspense } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { Icon } from "@phosphor-icons/react";
 import { XIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,13 @@ import { cn } from "@/lib/utils";
 export type DashboardNavItem = {
   href: string;
   label: string;
+  icon: Icon;
+};
+
+export type DashboardQuickAction = {
+  href: string;
+  label: string;
+  description?: string;
   icon: Icon;
 };
 
@@ -20,9 +28,18 @@ type DashboardSidebarProps = {
   panelSubtitle: string;
   panelIcon: Icon;
   items: DashboardNavItem[];
+  quickActions?: DashboardQuickAction[];
 };
 
-export default function DashboardSidebar({
+export default function DashboardSidebar(props: DashboardSidebarProps) {
+  return (
+    <Suspense fallback={null}>
+      <DashboardSidebarInner {...props} />
+    </Suspense>
+  );
+}
+
+function DashboardSidebarInner({
   open,
   onClose,
   homeHref,
@@ -30,8 +47,22 @@ export default function DashboardSidebar({
   panelSubtitle,
   panelIcon: PanelIcon,
   items,
+  quickActions = [],
 }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  function isQuickActionActive(href: string) {
+    const [path, query] = href.split("?");
+    if (pathname !== path) return false;
+    if (!query) return true;
+
+    const expected = new URLSearchParams(query);
+    for (const [key, value] of expected.entries()) {
+      if (searchParams.get(key) !== value) return false;
+    }
+    return true;
+  }
 
   return (
     <>
@@ -70,9 +101,12 @@ export default function DashboardSidebar({
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        <nav className="flex-1 space-y-1 overflow-y-auto scrollbar-hide p-3">
           {items.map(({ href, label, icon: ItemIcon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
+            const active =
+              href === "/patient/profile"
+                ? pathname === href
+                : pathname === href || pathname.startsWith(`${href}/`);
 
             return (
               <Link
@@ -93,7 +127,53 @@ export default function DashboardSidebar({
           })}
         </nav>
 
-        <div className="border-t border-teal-100 p-4">
+        {quickActions.length > 0 && (
+          <div className="border-t border-teal-100 p-3">
+            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              Quick actions
+            </p>
+            <div className="space-y-1">
+              {quickActions.map(({ href, label, description, icon: ActionIcon }) => {
+                const active = isQuickActionActive(href);
+
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={onClose}
+                    className={cn(
+                      "flex items-start gap-3 rounded-lg px-3 py-2.5 transition",
+                      active
+                        ? "bg-teal-600 text-white"
+                        : "text-zinc-700 hover:bg-teal-50 hover:text-teal-800",
+                    )}
+                  >
+                    <ActionIcon
+                      size={20}
+                      weight={active ? "fill" : "regular"}
+                      className="mt-0.5 shrink-0"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium">{label}</span>
+                      {description && (
+                        <span
+                          className={cn(
+                            "mt-0.5 block text-xs leading-snug",
+                            active ? "text-teal-100" : "text-zinc-500",
+                          )}
+                        >
+                          {description}
+                        </span>
+                      )}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-auto border-t border-teal-100 p-4">
           <p className="text-xs text-zinc-500">Diabetes Management System</p>
         </div>
       </aside>

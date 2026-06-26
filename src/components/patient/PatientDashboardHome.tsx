@@ -5,11 +5,9 @@ import {
   CalendarIcon,
   DropIcon,
   HeartbeatIcon,
-  UserCircleIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import DashboardHero, { getTimeGreeting } from "@/components/dashboard/DashboardHero";
-import QuickActionCard from "@/components/dashboard/QuickActionCard";
 import StatCard from "@/components/admin/StatCard";
 import { API_CONSTANTS } from "@/constants/staticConstant";
 import { isApiSuccess } from "@/helper/apiErrors";
@@ -37,7 +35,6 @@ export default function PatientDashboardHome() {
 
   const [profile, setProfile] = useState<PatientMedicalData | null>(null);
   const [appointmentCount, setAppointmentCount] = useState(0);
-  const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,7 +60,6 @@ export default function PatientDashboardHome() {
         if (isApiSuccess(bookingsRes.status)) {
           const bookings = normalizeBookings(bookingsRes.data);
           setAppointmentCount(bookings.length);
-          setPendingCount(bookings.filter((b) => b.status === "PENDING").length);
         }
       } finally {
         setLoading(false);
@@ -111,36 +107,12 @@ export default function PatientDashboardHome() {
         />
       </div>
 
-      <section>
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-500">
-          Quick actions
-        </h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          <QuickActionCard
-            href="/patient/bookings"
-            title="Book appointment"
-            description={
-              pendingCount > 0
-                ? `${pendingCount} request(s) waiting for doctor approval`
-                : "Schedule a visit with your doctor"
-            }
-            icon={CalendarIcon}
-          />
-          <QuickActionCard
-            href="/patient/profile"
-            title="Update medical profile"
-            description="Keep your health details and emergency contacts current"
-            icon={UserCircleIcon}
-          />
-        </div>
-      </section>
-
       {profile && (
         <section className="rounded-xl border border-teal-100 bg-white p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-lg font-semibold text-teal-800">Health snapshot</h3>
             <Link
-              href="/patient/profile"
+              href="/patient/medical-profile"
               className="text-sm font-medium text-teal-600 hover:text-teal-700 hover:underline"
             >
               Edit profile →

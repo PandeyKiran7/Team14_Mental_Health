@@ -100,7 +100,7 @@ export default function RoleUsersTable({
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-teal-100 bg-white">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-hide">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-teal-100 bg-teal-50/60">

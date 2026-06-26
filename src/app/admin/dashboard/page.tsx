@@ -79,13 +79,13 @@ export default function AdminDashboardPage() {
             icon={UsersIcon}
           />
           <QuickActionCard
-            href="/admin/doctors/register"
+            href="/admin/users/register/doctor"
             title="Register doctor"
             description="Create a new doctor account for the platform"
             icon={UserPlusIcon}
           />
           <QuickActionCard
-            href="/admin/doctors"
+            href="/admin/users?tab=doctors"
             title="Doctor management"
             description={`${doctorCount} doctors · ${adminCount} admins`}
             icon={StethoscopeIcon}
