@@ -1,4 +1,3 @@
-// components/booking/BookingModal.tsx
 import BookAppointmentForm from './BookAppointmentForm';
 
 export default function BookingModal({
@@ -23,7 +22,7 @@ export default function BookingModal({
           hideDoctorSelector={true}
           onBooked={() => {
             onSuccess?.();
-            onClose();
+            onClose(); 
           }}
         />
       </div>

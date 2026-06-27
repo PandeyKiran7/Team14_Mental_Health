@@ -62,7 +62,6 @@ export default function DoctorsPage() {
       <h1 className="text-2xl font-bold text-gray-800">Find a Specialist</h1>
       <p className="text-gray-600 mt-1">Quality care is just a few clicks away.</p>
 
-      {/* Search Bar */}
       <div className="mt-4">
         <input
           type="text"
@@ -79,7 +78,6 @@ export default function DoctorsPage() {
         <span className="text-sm text-gray-500">{filteredDoctors.length} Doctors found</span>
       </div>
 
-      {/* Doctor Cards Grid */}
       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredDoctors.map((doctor) => (
           <DoctorCard
@@ -95,16 +93,13 @@ export default function DoctorsPage() {
         <div className="mt-10 text-center text-gray-500">No doctors match your search.</div>
       )}
 
-      {/* Booking Modal */}
       {selectedDoctorId && (
         <BookingModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           doctorId={selectedDoctorId}
           onSuccess={() => {
-            // Optional: show a toast, refresh list, or navigate
             console.log('Booking successful!');
-            // e.g., router.push('/patient/bookings');
           }}
         />
       )}

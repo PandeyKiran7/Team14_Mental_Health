@@ -1,85 +1,82 @@
+// src/components/patient/DoctorCard.tsx
 'use client';
 
-import router from "next/dist/shared/lib/router/router";
+import Image from 'next/image';
 
 interface Doctor {
   userId: number;
   firstName: string;
   lastName: string;
-  profileImageURL?: string;
+  profileImageURL: string;
+  email?: string;
+  mobileNumber?: string;
+  address?: string;
+  gender?: string;
+  dateOfBirth?: string;
 }
 
 interface DoctorCardProps {
   doctor: Doctor;
-  onBookAppointment: (doctorId: number) => void; onViewProfile: (doctorId: number) => void;
-
+  onBookAppointment: (id: number) => void;   // ← parent सँग मिलाइयो
+  onViewProfile: (id: number) => void;
 }
 
-// Temporary placeholder data – replace with real API fields when available
-const getPlaceholder = (doctor: Doctor) => {
-  const specialties = ['Cardiology', 'Pediatrics', 'Neurology', 'Orthopedics', 'Dermatology', 'Ophthalmology'];
-  const specialty = specialties[doctor.userId % specialties.length];
-  const experience = 5 + (doctor.userId % 15);
-  const fee = 80 + (doctor.userId % 150) + 20;
-  const rating = (4 + (doctor.userId % 10) / 10).toFixed(1);
-  const nextAvailable = ['Today, 04:00 PM', 'Tomorrow, 10:30 AM', 'Wed, 25 Oct', 'Fri, 27 Oct', 'Mon, 23 Oct', 'Tomorrow, 09:00 AM'];
-  return {
-    specialty,
-    experience,
-    fee,
-    rating,
-    nextAvailable: nextAvailable[doctor.userId % nextAvailable.length],
-  };
-};
-  
-
 export default function DoctorCard({ doctor, onBookAppointment, onViewProfile }: DoctorCardProps) {
-  const { specialty, experience, fee, rating, nextAvailable } = getPlaceholder(doctor);
+  const formattedDOB = doctor.dateOfBirth
+    ? new Date(doctor.dateOfBirth).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    : 'N/A';
 
   return (
-    <div className="border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md transition bg-white">
-      {/* Doctor Name & Specialty & Rating */}
-      <div className="flex items-center justify-between">
+    <div className="border rounded-lg p-4 shadow hover:shadow-lg transition">
+      <div className="flex items-center gap-4">
+        <Image
+          src={doctor.profileImageURL || '/default-avatar.png'}
+          alt={`${doctor.firstName} ${doctor.lastName}`}
+          width={64}
+          height={64}
+          className="rounded-full object-cover"
+        />
         <div>
-          <h3 className="text-lg font-bold text-gray-800">
+          <h3 className="font-semibold text-lg">
             Dr. {doctor.firstName} {doctor.lastName}
           </h3>
-          <p className="text-sm text-gray-500">{specialty} Specialist</p>
-        </div>
-        <div className="flex items-center gap-1 bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">
-          <span>⭐</span> {rating}
+          <p className="text-sm text-gray-500">{doctor.gender || 'Gender not specified'}</p>
         </div>
       </div>
 
-      {/* Experience & Fee */}
-      <div className="mt-3 flex items-center justify-between text-sm border-t border-gray-100 pt-3">
+      <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
         <div>
-          <span className="font-medium text-gray-500">EXPERIENCE</span>
-          <p className="font-semibold text-gray-700">{experience} Years</p>
+          <span className="font-medium">EMAIL</span>
+          <p className="truncate">{doctor.email || 'N/A'}</p>
         </div>
-        <div className="text-right">
-          <span className="font-medium text-gray-500">FEE</span>
-          <p className="font-semibold text-gray-700">${fee.toFixed(2)}</p>
+        <div>
+          <span className="font-medium">MOBILE</span>
+          <p>{doctor.mobileNumber || 'N/A'}</p>
+        </div>
+        <div className="col-span-2">
+          <span className="font-medium">ADDRESS</span>
+          <p>{doctor.address || 'N/A'}</p>
+        </div>
+        <div className="col-span-2">
+          <span className="font-medium">DATE OF BIRTH</span>
+          <p>{formattedDOB}</p>
         </div>
       </div>
 
-      {/* Next Available */}
-      <div className="mt-3 text-sm border-t border-gray-100 pt-3">
-        <span className="font-medium text-gray-500">NEXT AVAILABLE</span>
-        <p className="font-semibold text-gray-700">{nextAvailable}</p>
-      </div>
-
-      {/* Buttons */}
-      <div className="mt-4 flex gap-3">
+      <div className="mt-4 flex gap-2">
         <button
           onClick={() => onViewProfile(doctor.userId)}
-          className="flex-1 bg-blue-50 text-blue-700 font-medium py-2 rounded-lg hover:bg-blue-100 transition"
+          className="flex-1 bg-green-100 text-green-800 py-2 rounded hover:bg-green-200"
         >
           View Profile
         </button>
         <button
           onClick={() => onBookAppointment(doctor.userId)}
-          className="flex-1 bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 transition"
+          className="flex-1 bg-green-700 text-white py-2 rounded hover:bg-green-800"
         >
           Book Now
         </button>

@@ -14,8 +14,8 @@ import ApiMessage from "@/components/ui/ApiMessage";
 
 type BookAppointmentFormProps = {
   onBooked: () => void;
-  initialDoctorId?: number;             
-  hideDoctorSelector?: boolean;         
+  initialDoctorId?: number;
+  hideDoctorSelector?: boolean;
 };
 
 function todayLocalDateValue(): string {
@@ -26,7 +26,11 @@ function todayLocalDateValue(): string {
   return `${year}-${month}-${day}`;
 }
 
-export default function BookAppointmentForm({ onBooked }: BookAppointmentFormProps) {
+export default function BookAppointmentForm({
+  onBooked,
+  initialDoctorId,
+  hideDoctorSelector = false,
+}: BookAppointmentFormProps) {
   const minBookingDate = todayLocalDateValue();
   const [doctorUserId, setDoctorUserId] = useState("");
   const [bookingDate, setBookingDate] = useState("");
@@ -38,6 +42,7 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [doctors, setDoctors] = useState<BookableDoctor[]>([]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // ✅ सफलता मोडलको लागि
 
   const selectedDoctor = useMemo(
     () => doctors.find((doctor) => String(doctor.userId) === doctorUserId),
@@ -66,6 +71,16 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
 
     void loadDoctors();
   }, []);
+
+  // ✅ initialDoctorId आएमा त्यसलाई चयन गर्ने
+  useEffect(() => {
+    if (initialDoctorId && doctors.length > 0) {
+      const found = doctors.find((d) => d.userId === initialDoctorId);
+      if (found) {
+        setDoctorUserId(String(initialDoctorId));
+      }
+    }
+  }, [initialDoctorId, doctors]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,7 +120,7 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
     }
 
     try {
-      const pathDoctorId = selectedDoctor.bookingDoctorId;
+      const pathDoctorId = selectedDoctor.bookingDoctorId; // अब userId नै हो
       const payload = {
         bookingDate,
         startTime: startTime.slice(0, 5),
@@ -130,18 +145,13 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
 
       if (!isApiSuccess(response.status)) {
         const apiError = resolveApiError(response, "Failed to book appointment.");
-        if (response.status === 404 && apiError.toLowerCase().includes("doctor")) {
-          setError(response.data.message);
-        } else {
-          setError(apiError);
-        }
+        setError(apiError);
         return;
       }
 
-      setMessage("Appointment booked successfully. Waiting for doctor approval.");
-      setDoctorUserId("");
-      setNotes("");
-      onBooked();
+      // ✅ सफल भएपछि मेसेज सेट गर्नुको सट्टा सफलता मोडल देखाउने
+      setShowSuccessModal(true);
+      // onBooked लाई पछि मात्र कल गर्ने (modal बन्द गरेपछि)
     } catch (submitError) {
       setError(getNetworkErrorMessage(submitError));
     } finally {
@@ -150,98 +160,125 @@ export default function BookAppointmentForm({ onBooked }: BookAppointmentFormPro
   }
 
   return (
-    <div className="rounded-xl border border-teal-100 bg-white p-6">
-      <h2 className="text-lg font-semibold text-teal-800">Book appointment</h2>
+    <>
+      <div className="rounded-xl border border-teal-100 bg-white p-6">
+        <h2 className="text-lg font-semibold text-teal-800">Book appointment</h2>
 
-      <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-4">
-        <div>
-          <label htmlFor="doctorUserId" className="mb-1 block text-sm font-medium text-zinc-700">
-            Doctor *
-          </label>
-          <Select
-            id="doctorUserId"
-            required
-            value={doctorUserId}
-            onChange={(e) => setDoctorUserId(e.target.value)}
-            disabled={loadingDoctors || doctors.length === 0}
+        <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-4">
+          {!hideDoctorSelector && (
+            <div>
+              <label htmlFor="doctorUserId" className="mb-1 block text-sm font-medium text-zinc-700">
+                Doctor *
+              </label>
+              <Select
+                id="doctorUserId"
+                required
+                value={doctorUserId}
+                onChange={(e) => setDoctorUserId(e.target.value)}
+                disabled={loadingDoctors || doctors.length === 0}
+              >
+                <option value="">
+                  {loadingDoctors
+                    ? "Loading doctors…"
+                    : doctors.length === 0
+                    ? "No doctors available"
+                    : "Select a doctor"}
+                </option>
+                {doctors.map((doctor) => (
+                  <option key={doctor.userId} value={String(doctor.userId)}>
+                    {doctor.name}
+                    {doctor.specialization ? ` — ${doctor.specialization}` : ""}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Date *</label>
+              <input
+                type="date"
+                required
+                min={minBookingDate}
+                value={bookingDate}
+                onChange={(e) => setBookingDate(e.target.value)}
+                className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">Start time *</label>
+              <input
+                type="time"
+                required
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-zinc-700">End time *</label>
+              <input
+                type="time"
+                required
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-zinc-700">Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              className="w-full resize-y rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+            />
+          </div>
+
+          {message && <ApiMessage message={message} variant="success" />}
+          {error && <ApiMessage message={error} variant="error" />}
+
+          <button
+            type="submit"
+            disabled={saving || loadingDoctors || doctors.length === 0}
+            className="rounded-lg bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
           >
-            <option value="">
-              {loadingDoctors
-                ? "Loading doctors…"
-                : doctors.length === 0
-                  ? "No doctors available"
-                  : "Select a doctor"}
-            </option>
-            {doctors.map((doctor) => (
-              <option key={doctor.userId} value={String(doctor.userId)}>
-                {doctor.name}
-                {doctor.specialization ? ` — ${doctor.specialization}` : ""}
-              </option>
-            ))}
-          </Select>
-        </div>
+            {saving ? "Booking…" : "Book appointment"}
+          </button>
+        </form>
+      </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-zinc-700">
-              Date *
-            </label>
-            <input
-              type="date"
-              required
-              min={minBookingDate}
-              value={bookingDate}
-              onChange={(e) => setBookingDate(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-zinc-700">
-              Start time *
-            </label>
-            <input
-              type="time"
-              required
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-zinc-700">
-              End time *
-            </label>
-            <input
-              type="time"
-              required
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-            />
+      {/* ✅ सफलता मोडल (popup) */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="max-w-sm w-full rounded-xl bg-white p-6 shadow-xl">
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Appointment Booked!</h3>
+              <p className="mt-2 text-sm text-gray-600">
+                Your appointment has been booked successfully.<br />
+                Waiting for doctor approval.
+              </p>
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  onBooked(); 
+                }}
+                className="mt-4 inline-flex w-full justify-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-zinc-700">Notes</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={2}
-            className="w-full resize-y rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-          />
-        </div>
-
-        {message && <ApiMessage message={message} variant="success" />}
-        {error && <ApiMessage message={error} variant="error" />}
-
-        <button
-          type="submit"
-          disabled={saving || loadingDoctors || doctors.length === 0}
-          className="rounded-lg bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60"
-        >
-          {saving ? "Booking…" : "Book appointment"}
-        </button>
-      </form>
-    </div>
+      )}
+    </>
   );
 }
