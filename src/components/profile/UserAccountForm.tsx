@@ -28,6 +28,7 @@ import ProfileSection from "@/components/profile/ProfileSection";
 // ─── Props ──────────────────────────────────────────────────────────────
 type UserAccountFormProps = {
   initialUser?: StoredUser; // optional – when viewing another user's profile
+  hideHeader?: boolean;
 };
 
 // ─── Types & Helpers ────────────────────────────────────────────────────
@@ -68,7 +69,7 @@ function formatGender(value: string): string {
 }
 
 // ─── Component ──────────────────────────────────────────────────────────
-export default function UserAccountForm({ initialUser }: UserAccountFormProps) {
+export default function UserAccountForm({ initialUser, hideHeader = false }: UserAccountFormProps) {
   const [user, setUser] = useState<StoredUser | null>(initialUser || null);
   const [form, setForm] = useState<AccountFormState>(emptyForm);
   const [loading, setLoading] = useState(true);
@@ -265,7 +266,7 @@ export default function UserAccountForm({ initialUser }: UserAccountFormProps) {
       }
       action={showEditButton ? <ProfileEditButton onClick={() => setEditing(true)} /> : null}
     >
-      <ProfileAccountHeader user={user} className="mb-6" />
+      {!hideHeader && <ProfileAccountHeader user={user} className="mb-6" />}
 
       {loading ? (
         <p className="text-sm text-zinc-500">Loading account details…</p>

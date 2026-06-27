@@ -471,7 +471,7 @@ export default function DoctorProfileForm({
           ? "Your license, specialization, and availability for patient bookings."
           : isOwnProfile
           ? "Your saved professional information."
-          : "Doctor's professional information (read‑only)."
+          : "Doctor's professional information."
       }
       action={
         showEditButton ? (

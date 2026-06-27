@@ -92,6 +92,8 @@ export default function PrescriptionSection({
             endpoint: "prescription",
             pathParams: { bookingId },
             medicines,
+            dosageInstructions: dosageInstructions || undefined,
+            notes: notes || undefined,
             token,
           })
         : await apiPostCall({

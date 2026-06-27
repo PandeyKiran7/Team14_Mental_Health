@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import FormButton from "@/components/formElements/FormButton";
+import Link from "next/link";
 import FormInput from "@/components/formElements/FormInput";
 import FormSelect from "@/components/formElements/FormSelect";
 import { slugify } from "@/lib/slugify";
@@ -212,29 +212,33 @@ export default function BlogForm({
         <p className="text-sm text-red-600">{localError ?? error}</p>
       )}
 
-      <div className="flex flex-wrap gap-3">
-        <FormButton
-          type="button"
-          disabled={saving}
-          onClick={() => handleSave("DRAFT")}
-        >
-          {saving ? "Saving…" : "Save draft"}
-        </FormButton>
-        <FormButton
-          type="button"
-          disabled={saving}
-          onClick={() => handleSave("PUBLISHED")}
-        >
-          {saving ? "Saving…" : "Publish"}
-        </FormButton>
-        {initial && (
-          <FormButton
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-zinc-100">
+        <div className="flex gap-3">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => handleSave(initial ? initial.status : "DRAFT")}
+            className="rounded-lg bg-teal-600 px-6 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-60 transition"
+          >
+            {saving ? "Saving…" : initial?.status === "PUBLISHED" ? "Save Changes" : "Save as Draft"}
+          </button>
+          <Link
+            href="/content-manager/blogs"
+            className="rounded-lg border border-zinc-200 bg-white px-6 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition"
+          >
+            Cancel
+          </Link>
+        </div>
+
+        {initial && initial.status !== "ARCHIVED" && (
+          <button
             type="button"
             disabled={saving}
             onClick={() => handleSave("ARCHIVED")}
+            className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 transition"
           >
-            Archive
-          </FormButton>
+            Archive Post
+          </button>
         )}
       </div>
     </form>

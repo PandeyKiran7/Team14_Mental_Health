@@ -2,6 +2,7 @@
 
 import BookingsPanel from "@/components/booking/BookingsPanel";
 
+
 export default function DoctorBookingsPage() {
-  return <BookingsPanel />;
+  return <BookingsPanel userRole="doctor" />;
 }

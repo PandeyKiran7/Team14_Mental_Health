@@ -11,7 +11,7 @@ import { CalendarPlusIcon } from "lucide-react";
 export const PATIENT_NAV_ITEMS: DashboardNavItem[] = [
   {
     href: "/patient/dashboard",
-    label: "Overview",
+    label: "Dashboard",
     icon: SquaresFourIcon,
   },
   {

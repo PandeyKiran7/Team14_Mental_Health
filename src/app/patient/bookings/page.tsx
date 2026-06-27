@@ -1,10 +1,7 @@
-import BookingsPanel from '@/components/booking/BookingsPanel';
+"use client";
 
-type PatientBookingsPageProps = {
-  searchParams: Promise<{ doctorId?: string }>;
-};
+import BookingsPanel from "@/components/booking/BookingsPanel";
 
-export default async function PatientBookingsPage({ searchParams }: PatientBookingsPageProps) {
-  const { doctorId } = await searchParams;
-  return <BookingsPanel doctorId={doctorId ? parseInt(doctorId) : undefined} />;
+export default function PatientBookingsPage() {
+  return <BookingsPanel userRole="patient" />;
 }

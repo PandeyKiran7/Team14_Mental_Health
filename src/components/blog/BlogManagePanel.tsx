@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
-import { deleteBlog, fetchBlogs, type BlogListStatus } from "@/lib/blogApi";
+import { PencilSimpleIcon, TrashIcon, GlobeIcon } from "@phosphor-icons/react";
+import { deleteBlog, fetchBlogs, updateBlog, type BlogListStatus } from "@/lib/blogApi";
 import { cn } from "@/lib/utils";
 import { formatBlogCategory, type Blog } from "@/types/blog";
 import ApiMessage from "@/components/ui/ApiMessage";
@@ -29,6 +29,20 @@ export default function BlogManagePanel({
   const [deleteTarget, setDeleteTarget] = useState<Blog | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [publishingId, setPublishingId] = useState<number | null>(null);
+
+  async function handlePublish(blogId: number) {
+    setPublishingId(blogId);
+    setError(null);
+    const result = await updateBlog(blogId, { status: "PUBLISHED" });
+    if (!result.ok) {
+      setError(result.message);
+      setPublishingId(null);
+      return;
+    }
+    setPublishingId(null);
+    await load();
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -129,10 +143,21 @@ export default function BlogManagePanel({
                     {new Date(blog.updatedAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      {tab === "draft" && (
+                        <button
+                          type="button"
+                          disabled={publishingId === blog.blogId}
+                          onClick={() => void handlePublish(blog.blogId)}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition shadow-sm"
+                        >
+                          <GlobeIcon size={14} />
+                          {publishingId === blog.blogId ? "Publishing…" : "Publish"}
+                        </button>
+                      )}
                       <Link
                         href={`${basePath}/${blog.blogId}/edit`}
-                        className="inline-flex items-center gap-1 rounded-lg border border-teal-100 px-3 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-teal-100 px-3 py-1.5 text-xs font-medium text-teal-700 hover:bg-teal-50 transition"
                       >
                         <PencilSimpleIcon size={14} />
                         Edit
@@ -143,7 +168,7 @@ export default function BlogManagePanel({
                           setDeleteError(null);
                           setDeleteTarget(blog);
                         }}
-                        className="inline-flex items-center gap-1 rounded-lg border border-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-150 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 transition"
                       >
                         <TrashIcon size={14} />
                         Delete

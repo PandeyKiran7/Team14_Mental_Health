@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, MapPin, Video, Search, SlidersHorizontal, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import {
+  Clock, MapPin, Video, Search, SlidersHorizontal,
+  ChevronLeft, ChevronRight, Plus
+} from 'lucide-react';
 import { apiGetCall } from '@/helper/apiService';
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -19,7 +22,7 @@ interface Booking {
 }
 
 interface BookingsPanelProps {
-  doctorId?: number;
+  userRole: 'patient' | 'doctor';
 }
 
 const HISTORY_PAGE_SIZE = 4;
@@ -94,7 +97,7 @@ const Avatar = ({ id, name, size = 'md' }: { id: number; name: string; size?: 's
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────
-export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
+export default function BookingsPanel({ userRole }: BookingsPanelProps) {
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,9 +127,23 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
     fetchBookings();
   }, []);
 
-  // ─── Schedule Now handler ─────────────────────────────────────────
+  // ─── Handle "View Patient Details" click ────────────────────────────
+  const handleViewPatientDetails = (booking: Booking) => {
+    router.push(`/doctor/patient-details/${booking.patient.id}?bookingId=${booking.id}`);
+  };
+
+  // ─── Close modal ──────────────────────────────────────────────────────
+  const closeModal = () => {
+    setSelectedBooking(null);
+  };
+
+  // ─── Schedule / Manage Click ─────────────────────────────────────────
   const handleScheduleClick = () => {
-    router.push('/patient/doctors');
+    if (userRole === 'patient') {
+      router.push('/patient/doctors');
+    } else {
+      router.push('/doctor/schedule');
+    }
   };
 
   // ─── Derived data ───────────────────────────────────────────────────
@@ -163,14 +180,21 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
     [bookings]
   );
 
+  // ─── Helper to get the "other party" ──────────────────────────────
+  const getOtherParty = (booking: Booking) => {
+    return userRole === 'patient' ? booking.doctor : booking.patient;
+  };
+
+  // ─── History search ──────────────────────────────────────────────────
   const filteredHistory = useMemo(() => {
     const query = historySearch.toLowerCase();
-    return history.filter(
-      (b) =>
-        b.doctor.name.toLowerCase().includes(query) ||
-        (b.doctor.specialization || '').toLowerCase().includes(query)
-    );
-  }, [history, historySearch]);
+    return history.filter((b) => {
+      const counterpart = getOtherParty(b);
+      const name = counterpart.name.toLowerCase();
+      const spec = b.doctor.specialization?.toLowerCase() || '';
+      return name.includes(query) || spec.includes(query);
+    });
+  }, [history, historySearch, userRole]);
 
   const totalHistoryPages = Math.max(1, Math.ceil(filteredHistory.length / HISTORY_PAGE_SIZE));
   const currentPage = Math.min(historyPage, totalHistoryPages);
@@ -182,15 +206,16 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
   if (loading) return <div className="p-6 text-slate-400">Loading appointments…</div>;
   if (error) return <div className="p-6 text-rose-500">{error}</div>;
 
+  // ─── Render ────────────────────────────────────────────────────────────
   return (
     <div className="max-w-6xl mx-auto p-6 bg-slate-50">
-      {/* ── Header ──────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-teal-900">My Appointments</h1>
           <p className="text-sm text-slate-500 mt-0.5">Manage your upcoming visits and healthcare history.</p>
         </div>
-        <div className="flex items-center gap-3">
+        {userRole === 'patient' && (
           <button
             onClick={handleScheduleClick}
             className="flex items-center gap-1.5 bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium rounded-full pl-3.5 pr-4 py-2.5 transition"
@@ -198,7 +223,7 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
             <Plus size={16} />
             Schedule Now
           </button>
-        </div>
+        )}
       </div>
 
       {/* ── Upcoming Appointments ───────────────────────────────── */}
@@ -219,24 +244,32 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
               const status = normalizeStatus(booking.status);
               const meta = getStatusMeta(status);
               const isConfirmed = status === 'CONFIRMED';
+              const isPending = status === 'PENDING';
               const isTelehealth = !!booking.meetLink;
+
+              const other = getOtherParty(booking);
+              const otherName = other.name;
+              const otherId = other.id;
+              const specialization = userRole === 'patient' ? (booking.doctor.specialization || 'General Medicine') : undefined;
 
               return (
                 <div
                   key={booking.id}
                   className={`bg-white border-2 ${meta.cardBorder} rounded-2xl p-5 shadow-sm`}
                 >
-                  {/* Doctor + date badge */}
+                  {/* Top row */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      <Avatar id={booking.doctor.id} name={booking.doctor.name} />
+                      <Avatar id={otherId} name={otherName} />
                       <div>
                         <h3 className="font-semibold text-slate-800 leading-tight">
-                          {booking.doctor.name || `Dr. ID ${booking.doctor.id}`}
+                          {otherName}
                         </h3>
-                        <p className="text-sm text-slate-500">
-                          {booking.doctor.specialization || 'General Medicine'}
-                        </p>
+                        {specialization && (
+                          <p className="text-sm text-slate-500">
+                            {specialization}
+                          </p>
+                        )}
                         <div className="mt-1">
                           <StatusDot status={booking.status} />
                         </div>
@@ -252,7 +285,7 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
                     </div>
                   </div>
 
-                  {/* Details row */}
+                  {/* Time / location row */}
                   <div className="mt-4 flex flex-wrap gap-6 text-sm">
                     {isTelehealth ? (
                       <>
@@ -298,29 +331,51 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
                     </p>
                   )}
 
-                  {/* ── Actions ─────────────────────────────────── */}
+                  {/* ── Actions ── */}
                   <div className="mt-4 flex gap-3">
-                    {isConfirmed ? (
-                      // ✅ Confirmed: only one button – "View Appointment"
-                      <button
-                        onClick={() => setSelectedBooking(booking)}
-                        className="w-full bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium rounded-lg py-2 transition"
-                      >
-                        View Appointment
-                      </button>
-                    ) : (
-                      // ❌ Non‑confirmed: two buttons – Cancel Request + Details
-                      <>
-                        <button className="flex-1 border border-teal-700 text-teal-700 text-sm font-medium rounded-lg py-2 hover:bg-teal-50 transition">
-                          Cancel Request
-                        </button>
+                    {userRole === 'patient' ? (
+                      // ─── Patient actions ──────────────────────────────
+                      isConfirmed ? (
                         <button
                           onClick={() => setSelectedBooking(booking)}
-                          className="flex-1 border border-slate-300 text-slate-600 text-sm font-medium rounded-lg py-2 bg-slate-50 hover:bg-slate-100 transition"
+                          className="w-full bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium rounded-lg py-2 transition"
                         >
-                          Details
+                          View Appointment
                         </button>
-                      </>
+                      ) : (
+                        <>
+                          <button className="flex-1 border border-teal-700 text-teal-700 text-sm font-medium rounded-lg py-2 hover:bg-teal-50 transition">
+                            Cancel Request
+                          </button>
+                          <button
+                            onClick={() => setSelectedBooking(booking)}
+                            className="flex-1 border border-slate-300 text-slate-600 text-sm font-medium rounded-lg py-2 bg-slate-50 hover:bg-slate-100 transition"
+                          >
+                            Details
+                          </button>
+                        </>
+                      )
+                    ) : (
+                      // ─── Doctor actions ──────────────────────────────
+                      isPending ? (
+                        <button
+                          onClick={() => handleViewPatientDetails(booking)}
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg py-2 transition"
+                        >
+                          View Patient Details
+                        </button>
+                      ) : isConfirmed ? (
+                        <button
+                          onClick={() => setSelectedBooking(booking)}
+                          className="w-full bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium rounded-lg py-2 transition"
+                        >
+                          View Appointment
+                        </button>
+                      ) : (
+                        <span className="w-full text-center text-slate-400 text-sm py-2">
+                          {status === 'COMPLETED' ? 'Completed' : 'Cancelled'}
+                        </span>
+                      )
                     )}
                   </div>
                 </div>
@@ -330,7 +385,7 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
         )}
       </section>
 
-      {/* ── Appointment History ─────────────────────────────────── */}
+      {/* ── Appointment History ────────────────────────────────────── */}
       <section className="mb-8">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h2 className="text-lg font-semibold text-slate-800">Appointment History</h2>
@@ -361,7 +416,9 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
             <table className="min-w-full divide-y divide-slate-100">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wide">Doctor</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wide">
+                    {userRole === 'patient' ? 'Doctor' : 'Patient'}
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wide">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wide">Specialty</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wide">Status</th>
@@ -371,13 +428,15 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
               <tbody className="divide-y divide-slate-100">
                 {paginatedHistory.map((booking) => {
                   const status = normalizeStatus(booking.status);
+                  const other = getOtherParty(booking);
+                  const specialization = userRole === 'patient' ? (booking.doctor.specialization || 'General') : undefined;
                   return (
                     <tr key={booking.id} className="hover:bg-slate-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <Avatar id={booking.doctor.id} name={booking.doctor.name} size="sm" />
+                          <Avatar id={other.id} name={other.name} size="sm" />
                           <span className="text-sm font-medium text-slate-800">
-                            {booking.doctor.name || `Dr. ${booking.doctor.id}`}
+                            {other.name}
                           </span>
                         </div>
                       </td>
@@ -385,7 +444,7 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
                         {formatDate(booking.bookingDate)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                        {booking.doctor.specialization || 'General'}
+                        {specialization || '—'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <StatusDot status={booking.status} />
@@ -450,83 +509,99 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
         </div>
       </div>
 
-      {/* ── Appointment Detail Modal ───────────────────────────── */}
       {selectedBooking && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-xl font-bold text-teal-900">Appointment Details</h2>
               <button
-                onClick={() => setSelectedBooking(null)}
+                onClick={closeModal}
                 className="text-slate-400 hover:text-slate-600 text-xl leading-none"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs font-medium text-slate-400 uppercase">Doctor</p>
-                <p className="text-lg font-semibold text-slate-800">
-                  {selectedBooking.doctor.name}
-                </p>
-                <p className="text-sm text-slate-500">
-                  {selectedBooking.doctor.specialization || 'General Medicine'}
-                </p>
-              </div>
+            <div className="space-y-6">
+              {/* Booking Information */}
+              <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Appointment Information</h3>
+                {userRole === 'patient' ? (
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase">Doctor</p>
+                    <p className="text-lg font-semibold text-slate-800">
+                      {selectedBooking.doctor.name}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {selectedBooking.doctor.specialization || 'General Medicine'}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase">Patient</p>
+                    <p className="text-lg font-semibold text-slate-800">
+                      {selectedBooking.patient.name}
+                    </p>
+                  </div>
+                )}
 
-              <div>
-                <p className="text-xs font-medium text-slate-400 uppercase">Status</p>
-                <StatusDot status={selectedBooking.status} />
-              </div>
-
-              <div>
-                <p className="text-xs font-medium text-slate-400 uppercase">Date & Time</p>
-                <p className="text-slate-700">
-                  {formatDate(selectedBooking.bookingDate)} &bull;{' '}
-                  {formatTime(selectedBooking.startTime)} – {formatTime(selectedBooking.endTime)}
-                  <span className="text-sm text-slate-400 ml-1">
-                    ({getDuration(selectedBooking.startTime, selectedBooking.endTime)} min)
-                  </span>
-                </p>
-              </div>
-
-              {selectedBooking.notes && (
                 <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase">Notes</p>
-                  <p className="text-slate-700">{selectedBooking.notes}</p>
+                  <p className="text-xs font-medium text-slate-400 uppercase">Status</p>
+                  <StatusDot status={selectedBooking.status} />
                 </div>
-              )}
 
-              {selectedBooking.meetLink && (
                 <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase">Meet Link</p>
-                  <a
-                    href={selectedBooking.meetLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-teal-700 underline"
-                  >
-                    Join Call
-                  </a>
+                  <p className="text-xs font-medium text-slate-400 uppercase">Date & Time</p>
+                  <p className="text-slate-700">
+                    {formatDate(selectedBooking.bookingDate)} &bull;{' '}
+                    {formatTime(selectedBooking.startTime)} – {formatTime(selectedBooking.endTime)}
+                    <span className="text-sm text-slate-400 ml-1">
+                      ({getDuration(selectedBooking.startTime, selectedBooking.endTime)} min)
+                    </span>
+                  </p>
                 </div>
-              )}
 
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-                <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase">Patient</p>
-                  <p className="text-slate-700">{selectedBooking.patient.name}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-slate-400 uppercase">Booking ID</p>
-                  <p className="text-slate-700">#{selectedBooking.id}</p>
+                {selectedBooking.notes && (
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase">Notes</p>
+                    <p className="text-slate-700">{selectedBooking.notes}</p>
+                  </div>
+                )}
+
+                {selectedBooking.meetLink && (
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase">Meet Link</p>
+                    <a
+                      href={selectedBooking.meetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-teal-700 underline"
+                    >
+                      Join Call
+                    </a>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200">
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase">
+                      {userRole === 'patient' ? 'Patient' : 'Doctor'}
+                    </p>
+                    <p className="text-slate-700">
+                      {userRole === 'patient' ? selectedBooking.patient.name : selectedBooking.doctor.name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-400 uppercase">Booking ID</p>
+                    <p className="text-slate-700">#{selectedBooking.id}</p>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="mt-6 flex justify-end">
               <button
-                onClick={() => setSelectedBooking(null)}
+                onClick={closeModal}
                 className="bg-teal-700 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-teal-800"
               >
                 Close

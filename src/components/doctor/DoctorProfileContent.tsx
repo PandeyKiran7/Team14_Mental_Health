@@ -76,7 +76,7 @@ export default function DoctorProfileContent({ doctorId }: DoctorProfileContentP
           {
             id: 'account',
             label: 'Account',
-            content: <UserAccountForm initialUser={user} />,
+            content: <UserAccountForm initialUser={user} hideHeader />,
           },
           {
             id: 'professional',
