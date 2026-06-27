@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation'; // ← यो थपियो
+import { useRouter } from 'next/navigation';
 import { Clock, MapPin, Video, Search, SlidersHorizontal, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { apiGetCall } from '@/helper/apiService';
 
@@ -95,7 +95,7 @@ const Avatar = ({ id, name, size = 'md' }: { id: number; name: string; size?: 's
 
 // ─── Main Component ──────────────────────────────────────────────────────
 export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
-  const router = useRouter(); // ← router इन्स्ट्यान्स
+  const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +126,7 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
 
   // ─── Schedule Now handler ─────────────────────────────────────────
   const handleScheduleClick = () => {
-    router.push('/patient/doctors'); // ← redirect गर्छ
+    router.push('/patient/doctors');
   };
 
   // ─── Derived data ───────────────────────────────────────────────────
@@ -298,18 +298,18 @@ export default function BookingsPanel({ doctorId }: BookingsPanelProps) {
                     </p>
                   )}
 
-                  {/* Actions */}
+                  {/* ── Actions ─────────────────────────────────── */}
                   <div className="mt-4 flex gap-3">
                     {isConfirmed ? (
-                      <>
-                        <button className="flex-1 bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium rounded-lg py-2 transition">
-                          Manage Booking
-                        </button>
-                        <button className="flex-1 border border-slate-300 text-slate-700 text-sm font-medium rounded-lg py-2 bg-white hover:bg-slate-50 transition">
-                          Reschedule
-                        </button>
-                      </>
+                      // ✅ Confirmed: only one button – "View Appointment"
+                      <button
+                        onClick={() => setSelectedBooking(booking)}
+                        className="w-full bg-teal-700 hover:bg-teal-800 text-white text-sm font-medium rounded-lg py-2 transition"
+                      >
+                        View Appointment
+                      </button>
                     ) : (
+                      // ❌ Non‑confirmed: two buttons – Cancel Request + Details
                       <>
                         <button className="flex-1 border border-teal-700 text-teal-700 text-sm font-medium rounded-lg py-2 hover:bg-teal-50 transition">
                           Cancel Request

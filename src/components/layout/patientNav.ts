@@ -1,5 +1,6 @@
 import {
   CalendarIcon,
+  DownloadSimpleIcon,
   HeartbeatIcon,
   SquaresFourIcon,
   UserCircleIcon,
@@ -22,6 +23,12 @@ export const PATIENT_NAV_ITEMS: DashboardNavItem[] = [
     href: "/patient/doctors",          // <-- new item
     label: "Book Appointment",
     icon: CalendarPlusIcon,
+  },
+
+  {
+    href: "/patient/reports",        // adjust to your actual route
+    label: "Download Report",
+    icon: DownloadSimpleIcon,
   },
 
   {
