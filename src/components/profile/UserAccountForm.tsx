@@ -25,6 +25,12 @@ import ProfileDetailGrid from "@/components/profile/ProfileDetailGrid";
 import ProfileEditButton from "@/components/profile/ProfileEditButton";
 import ProfileSection from "@/components/profile/ProfileSection";
 
+// ─── Props ──────────────────────────────────────────────────────────────
+type UserAccountFormProps = {
+  initialUser?: StoredUser; // optional – when viewing another user's profile
+};
+
+// ─── Types & Helpers ────────────────────────────────────────────────────
 type AccountFormState = {
   firstName: string;
   lastName: string;
@@ -61,8 +67,9 @@ function formatGender(value: string): string {
   return GENDER_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
 
-export default function UserAccountForm() {
-  const [user, setUser] = useState<StoredUser | null>(null);
+// ─── Component ──────────────────────────────────────────────────────────
+export default function UserAccountForm({ initialUser }: UserAccountFormProps) {
+  const [user, setUser] = useState<StoredUser | null>(initialUser || null);
   const [form, setForm] = useState<AccountFormState>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -70,11 +77,25 @@ export default function UserAccountForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Determine if we are viewing our own profile ──
+  const loggedInUser = getStoredUser();
+  const isOwnProfile = user?.userId === loggedInUser?.userId;
+
   useEffect(() => {
     async function loadAccount() {
       setLoading(true);
       setError(null);
 
+      // 1) If an initialUser was provided (e.g., from a doctor profile view),
+      //    use it directly and skip API fetch.
+      if (initialUser) {
+        setUser(initialUser);
+        setForm(mapStoredToForm(initialUser));
+        setLoading(false);
+        return;
+      }
+
+      // 2) Otherwise, load the logged‑in user from localStorage / API.
       const stored = getStoredUser();
       if (!stored?.userId) {
         setUser(null);
@@ -92,6 +113,7 @@ export default function UserAccountForm() {
           return;
         }
 
+        // For admin users, fetch full details from the backend.
         if (isAdminRole(stored.role)) {
           const response = await apiGetCall({
             endpoint: "user_by_id",
@@ -134,8 +156,9 @@ export default function UserAccountForm() {
     }
 
     void loadAccount();
-  }, []);
+  }, [initialUser]);
 
+  // ── Render helpers ────────────────────────────────────────────────────
   if (!user) {
     return (
       <ProfileSection title="Account details">
@@ -226,29 +249,23 @@ export default function UserAccountForm() {
     }
   }
 
+  // Determine if the Edit button should be shown:
+  // Only for own profile (isOwnProfile) and not already editing, and not admin.
+  const showEditButton = !loading && !editing && isOwnProfile && !isAdmin;
+
   return (
     <ProfileSection
       title="Account details"
       description={
         editing
           ? "Update your personal information below."
-          : "Your account information at a glance."
+          : isOwnProfile
+          ? "Your account information at a glance."
+          : "Doctor's account information (read‑only)."
       }
-      action={
-        !loading && !editing && !isAdmin ? (
-          <ProfileEditButton onClick={() => setEditing(true)} />
-        ) : null
-      }
+      action={showEditButton ? <ProfileEditButton onClick={() => setEditing(true)} /> : null}
     >
       <ProfileAccountHeader user={user} className="mb-6" />
-
-      {/* {isAdmin && !editing && (
-        <ApiMessage
-          variant="info"
-          className="mb-4"
-          message="Admin account details are view-only here. Use the Users page to manage other accounts."
-        />
-      )} */}
 
       {loading ? (
         <p className="text-sm text-zinc-500">Loading account details…</p>

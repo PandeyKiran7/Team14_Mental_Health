@@ -14,6 +14,8 @@ import ApiMessage from "@/components/ui/ApiMessage";
 
 type BookAppointmentFormProps = {
   onBooked: () => void;
+  initialDoctorId?: number;             
+  hideDoctorSelector?: boolean;         
 };
 
 function todayLocalDateValue(): string {

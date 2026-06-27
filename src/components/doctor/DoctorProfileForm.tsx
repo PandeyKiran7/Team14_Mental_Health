@@ -23,12 +23,14 @@ import {
   formToDoctorPayload,
   weekDays,
 } from "@/lib/doctorForm";
+import { getStoredUser } from "@/lib/auth";
 
 const BIOGRAPHY_MAX_LENGTH = 1000;
 
 type DoctorProfileFormProps = {
   mandatory?: boolean;
   onComplete?: () => void;
+  initialData?: any; // the doctor data from the API
 };
 
 function formatAverageRating(value: number | string | null | undefined): string | undefined {
@@ -122,22 +124,40 @@ function applyFetchResult(result: DoctorProfessionalFetchResult) {
 export default function DoctorProfileForm({
   mandatory = false,
   onComplete,
+  initialData,
 }: DoctorProfileFormProps = {}) {
   const router = useRouter();
-  const initial = initialStateFromCache();
-  const [form, setForm] = useState(initial.form);
-  const [snapshot, setSnapshot] = useState(initial.snapshot);
-  const [averageRating, setAverageRating] = useState<number | null>(initial.averageRating);
-  const [hasRecord, setHasRecord] = useState(initial.hasRecord);
-  const [loading, setLoading] = useState(initial.loading);
-  const [editing, setEditing] = useState(initial.editing);
+  const [form, setForm] = useState(emptyDoctorProfessionalForm);
+  const [snapshot, setSnapshot] = useState(emptyDoctorProfessionalForm);
+  const [averageRating, setAverageRating] = useState<number | null>(null);
+  const [hasRecord, setHasRecord] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(initial.error);
+  const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!initial.loading) return;
+  // Determine if we are viewing our own profile
+  const loggedInUser = getStoredUser();
+  // If initialData is provided, get the userId from it; otherwise use logged-in user's ID for fetch.
+  const isOwnProfile = initialData
+    ? loggedInUser?.userId === initialData.userId
+    : true; // If no initialData, we're viewing the logged-in user's own profile.
 
+  useEffect(() => {
+    // If initialData is provided, use it directly and skip fetch
+    if (initialData) {
+      const values = doctorDataToForm(initialData);
+      setForm(values);
+      setSnapshot(values);
+      setAverageRating(readAverageRating(initialData));
+      setHasRecord(true);
+      setEditing(false);
+      setLoading(false);
+      return;
+    }
+
+    // Otherwise, fetch the logged-in doctor's data
     let cancelled = false;
 
     async function loadData() {
@@ -169,16 +189,18 @@ export default function DoctorProfileForm({
     return () => {
       cancelled = true;
     };
-  }, [initial.loading]);
+  }, [initialData]);
 
   function updateField(
     field: keyof typeof emptyDoctorProfessionalForm,
     value: string | string[],
   ) {
+    if (!isOwnProfile) return; // disallow editing if not own profile
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
   function toggleDay(day: (typeof weekDays)[number]) {
+    if (!isOwnProfile) return;
     setForm((prev) => ({
       ...prev,
       availableDays: prev.availableDays.includes(day)
@@ -196,6 +218,10 @@ export default function DoctorProfileForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!isOwnProfile) {
+      setError("You cannot edit another doctor's profile.");
+      return;
+    }
     setError(null);
     setMessage(null);
     if (form.availableDays.length === 0) {
@@ -282,6 +308,7 @@ export default function DoctorProfileForm({
               value={form.licenseNumber}
               onChange={(e) => updateField("licenseNumber", e.target.value)}
               required
+              disabled={!isOwnProfile}
             />
             <FormInput
               name="qualification"
@@ -290,6 +317,7 @@ export default function DoctorProfileForm({
               value={form.qualification}
               onChange={(e) => updateField("qualification", e.target.value)}
               required
+              disabled={!isOwnProfile}
             />
           </div>
 
@@ -301,6 +329,7 @@ export default function DoctorProfileForm({
               value={form.specialization}
               onChange={(e) => updateField("specialization", e.target.value)}
               required
+              disabled={!isOwnProfile}
             />
             <FormInput
               name="yearsOfExperience"
@@ -311,6 +340,7 @@ export default function DoctorProfileForm({
               required
               min={0}
               max={60}
+              disabled={!isOwnProfile}
             />
           </div>
 
@@ -329,7 +359,8 @@ export default function DoctorProfileForm({
               required
               minLength={10}
               maxLength={BIOGRAPHY_MAX_LENGTH}
-              className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              disabled={!isOwnProfile}
+              className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 disabled:bg-zinc-100"
             />
           </FormField>
 
@@ -341,6 +372,7 @@ export default function DoctorProfileForm({
             onChange={(e) => updateField("consultationFee", e.target.value)}
             required
             min={0}
+            disabled={!isOwnProfile}
           />
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -351,6 +383,7 @@ export default function DoctorProfileForm({
               value={form.availableFrom}
               onChange={(e) => updateField("availableFrom", e.target.value)}
               required
+              disabled={!isOwnProfile}
             />
             <FormInput
               name="availableTo"
@@ -359,6 +392,7 @@ export default function DoctorProfileForm({
               value={form.availableTo}
               onChange={(e) => updateField("availableTo", e.target.value)}
               required
+              disabled={!isOwnProfile}
             />
           </div>
 
@@ -371,11 +405,12 @@ export default function DoctorProfileForm({
                     key={day}
                     type="button"
                     onClick={() => toggleDay(day)}
+                    disabled={!isOwnProfile}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       selected
                         ? "border-teal-600 bg-teal-600 text-white"
                         : "border-teal-200 bg-white text-teal-800 hover:bg-teal-50"
-                    }`}
+                    } ${!isOwnProfile ? "opacity-70 cursor-not-allowed" : ""}`}
                   >
                     {formatWeekDay(day)}
                   </button>
@@ -386,22 +421,24 @@ export default function DoctorProfileForm({
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <div className="flex flex-wrap gap-3">
-            <FormButton type="submit" disabled={saving} fullWidth={false}>
-              {saving ? "Saving…" : hasRecord ? "Update profile" : "Save profile"}
-            </FormButton>
-            {hasRecord && !mandatory && (
-              <FormButton
-                type="button"
-                variant="secondary"
-                fullWidth={false}
-                disabled={saving}
-                onClick={handleCancelEdit}
-              >
-                Cancel
+          {isOwnProfile && (
+            <div className="flex flex-wrap gap-3">
+              <FormButton type="submit" disabled={saving} fullWidth={false}>
+                {saving ? "Saving…" : hasRecord ? "Update profile" : "Save profile"}
               </FormButton>
-            )}
-          </div>
+              {hasRecord && !mandatory && (
+                <FormButton
+                  type="button"
+                  variant="secondary"
+                  fullWidth={false}
+                  disabled={saving}
+                  onClick={handleCancelEdit}
+                >
+                  Cancel
+                </FormButton>
+              )}
+            </div>
+          )}
         </form>
       )}
     </>
@@ -423,16 +460,21 @@ export default function DoctorProfileForm({
     return formContent;
   }
 
+  // Determine if we should show the Edit button (only if own profile and not already editing)
+  const showEditButton = isOwnProfile && hasRecord && !editing && !loading;
+
   return (
     <ProfileSection
       title={hasRecord ? "Professional profile" : "Complete professional profile"}
       description={
         editing || !hasRecord
           ? "Your license, specialization, and availability for patient bookings."
-          : "Your saved professional information."
+          : isOwnProfile
+          ? "Your saved professional information."
+          : "Doctor's professional information (read‑only)."
       }
       action={
-        hasRecord && !editing && !loading ? (
+        showEditButton ? (
           <ProfileEditButton onClick={() => setEditing(true)} />
         ) : null
       }

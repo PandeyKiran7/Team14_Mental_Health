@@ -6,18 +6,23 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export const API_ENDPOINTS = {
   health: "/api/health",
+
   // Authentication
   login: "/api/v1/login",
   register: "/api/v1/register",
   forgot_password: "/api/v1/forget-password",
+
   // PatientDetailsManagement
   patient_create: "/api/v1/patient",
   patient_medical_data: "/api/v1/patient-medical-data",
   update_patient_medical_data: "/api/v1/update/patient-medical-data",
+
   // DoctorDetailsManagement
   doctor_data: "/api/v1/doctor-data",
-  doctor_data_by_id: "/api/v1/doctor-data/:doctorId",
+  doctor_data_by_id: "/api/v1/doctor-data/:userId",
+  view_profile: "/api/v1/user-doctor-data/:userId",
   user_medical_data: "/api/v1/user-medical-data/:userId",
+
   // Users Management
   users: "/api/v1/users",
   user_by_id: "/api/v1/user/:userId",
@@ -27,28 +32,30 @@ export const API_ENDPOINTS = {
   patients: "/api/v1/patients",
   doctors: "/api/v1/doctors",
   content_managers: "/api/v1/content-managers",
+
   // BookingManagement
-  /** BookAppointment — POST /api/v1/book-appointment/:doctorId (doctor user id) */
   book_appointment: "/api/v1/book-appointment/:doctorId",
   bookings: "/api/v1/bookings",
   approve_booking: "/api/v1/approve-booking/:bookingId",
   deny_booking: "/api/v1/deny-booking/:bookingId",
+
   // Prescription
   prescription: "/api/v1/prescription/:bookingId",
   prescription_download: "/api/v1/prescription/:bookingId/download",
+
   // Recommendation
   recommendation: "/api/v1/recommendation/:bookingId",
   recommendation_download: "/api/v1/recommendation/:bookingId/download",
+
   // BlogManagement
   blog_create: "/api/v1/blog",
   blog_by_id: "/api/v1/blog/:blogId",
   published_blogs: "/api/v1/published-blogs",
   draft_blogs: "/api/v1/draft-blogs",
   archived_blogs: "/api/v1/archived-blogs",
+
   // Payment & Payout
-  /** GetPaymentDetailsForDoctor — POST /api/v1/doctor-finance-details/:doctorId (doctor user id) */
   doctor_finance_details: "/api/v1/doctor-finance-details/:doctorId",
-  /** paySalary — POST /api/v1/payout/:userId (doctor user id) */
   pay_salary: "/api/v1/payout/:userId",
 } as const;
 

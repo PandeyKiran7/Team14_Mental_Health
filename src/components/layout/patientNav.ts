@@ -5,6 +5,7 @@ import {
   UserCircleIcon,
 } from "@phosphor-icons/react";
 import type { DashboardNavItem } from "@/components/layout/DashboardSidebar";
+import { CalendarPlusIcon } from "lucide-react";
 
 export const PATIENT_NAV_ITEMS: DashboardNavItem[] = [
   {
@@ -17,6 +18,12 @@ export const PATIENT_NAV_ITEMS: DashboardNavItem[] = [
     label: "Appointments",
     icon: CalendarIcon,
   },
+    {
+    href: "/patient/doctors",          // <-- new item
+    label: "Book Appointment",
+    icon: CalendarPlusIcon,
+  },
+
   {
     href: "/patient/medical-profile",
     label: "Medical profile",

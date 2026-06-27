@@ -71,7 +71,6 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [profileImage, setProfileImage] = useState<File | null>(null);
 
   function updateField(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -104,9 +103,7 @@ export default function RegisterPage() {
       if (form.address.trim()) {
         formData.append("address", form.address.trim());
       }
-      if (profileImage) {
-        formData.append("userProfile", profileImage);
-      }
+      // No profile image appended
 
       const response = await apiFormPostCall("register", formData);
 
@@ -141,18 +138,24 @@ export default function RegisterPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold text-teal-800">Patient registration</h1>
-      <p className="mt-1 text-sm text-zinc-500">
-        Create a patient account to book doctors and manage your diabetes care.
-        Doctor accounts are created by the admin.
-      </p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Patient Registration</h1>
+      </div>
 
-      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        {/* Section heading */}
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
+            Personal Information
+          </h2>
+        </div>
+
+        {/* First, Middle, Last - 3 columns on desktop */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <FormInput
             name="firstName"
-            label="First name"
-            placeholder="First name"
+            label="First name *"
+            placeholder="John"
             value={form.firstName}
             onChange={(e) => updateField("firstName", e.target.value)}
             required
@@ -160,107 +163,132 @@ export default function RegisterPage() {
           <FormInput
             name="middleName"
             label="Middle name"
-            placeholder="Middle name"
+            placeholder="Michael"
             value={form.middleName}
             onChange={(e) => updateField("middleName", e.target.value)}
           />
+          <FormInput
+            name="lastName"
+            label="Last name *"
+            placeholder="Doe"
+            value={form.lastName}
+            onChange={(e) => updateField("lastName", e.target.value)}
+            required
+          />
         </div>
 
-        <FormInput
-          name="lastName"
-          label="Last name"
-          placeholder="Last name"
-          value={form.lastName}
-          onChange={(e) => updateField("lastName", e.target.value)}
-          required
-        />
+        {/* Email & Password - 2 columns */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormInput
+            name="email"
+            type="email"
+            label="Email *"
+            placeholder="you@example.com"
+            autoComplete="email"
+            value={form.email}
+            onChange={(e) => updateField("email", e.target.value)}
+            required
+          />
+          <FormPassword
+            name="password"
+            label="Password *"
+            placeholder="Create a strong password"
+            autoComplete="new-password"
+            value={form.password}
+            onChange={(e) => updateField("password", e.target.value)}
+            required
+            minLength={8}
+          />
+        </div>
 
-        <FormInput
-          name="email"
-          type="email"
-          label="Email"
-          placeholder="you@example.com"
-          autoComplete="email"
-          value={form.email}
-          onChange={(e) => updateField("email", e.target.value)}
-          required
-        />
+        {/* Mobile & Address - 2 columns */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormInput
+            name="mobileNumber"
+            type="tel"
+            label="Mobile number *"
+            placeholder="9800000000"
+            value={form.mobileNumber}
+            onChange={(e) => updateField("mobileNumber", e.target.value)}
+            required
+            pattern="[0-9]{7,15}"
+          />
+          <FormInput
+            name="address"
+            label="Address"
+            placeholder="City, country"
+            value={form.address}
+            onChange={(e) => updateField("address", e.target.value)}
+          />
+        </div>
 
-        <FormPassword
-          name="password"
-          label="Password"
-          placeholder="Password"
-          autoComplete="new-password"
-          value={form.password}
-          onChange={(e) => updateField("password", e.target.value)}
-          required
-          minLength={8}
-          hint="Example: Test@1234 — must include upper, lower, number, and @ $ ! % * ? &"
-        />
-
-        <FormInput
-          name="mobileNumber"
-          type="tel"
-          label="Mobile number"
-          placeholder="9800000000"
-          value={form.mobileNumber}
-          onChange={(e) => updateField("mobileNumber", e.target.value)}
-          required
-          pattern="[0-9]{7,15}"
-        />
-
-        <FormInput
-          name="address"
-          label="Address"
-          placeholder="City, country"
-          value={form.address}
-          onChange={(e) => updateField("address", e.target.value)}
-        />
-
-        <div className="grid gap-4 sm:grid-cols-2">
+        {/* Gender & Date of Birth - 2 columns */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormSelect
             name="gender"
-            label="Gender"
+            label="Gender *"
             value={form.gender}
             onChange={(e) => updateField("gender", e.target.value)}
             options={genderOptions}
             required
           />
-
           <FormInput
             name="dateOfBirth"
             type="date"
-            label="Date of birth"
+            label="Date of birth *"
             value={form.dateOfBirth}
             onChange={(e) => updateField("dateOfBirth", e.target.value)}
             required
           />
         </div>
 
-        <div>
-          <label htmlFor="profileImage" className="mb-1 block text-sm font-medium text-zinc-700">
-            Profile picture
-          </label>
-          <input
-            id="profileImage"
-            name="profileImage"
-            type="file"
-            accept="image/*"
-            onChange={(e) => setProfileImage(e.target.files?.[0] ?? null)}
-            className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-teal-800"
-          />
-        </div>
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
-        <FormButton type="submit" disabled={loading}>
-          {loading ? "Creating account…" : "Register"}
+        {/* Submit button */}
+        <FormButton
+          type="submit"
+          disabled={loading}
+          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all duration-150 disabled:opacity-50"
+        >
+          {loading ? (
+            <span className="flex items-center">
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              Creating account…
+            </span>
+          ) : (
+            "Register"
+          )}
         </FormButton>
       </form>
 
-      <p className="mt-4 text-center text-sm">
-        <Link href="/login" className="text-teal-600 hover:underline">
-          Already have an account?
+      <p className="mt-6 text-center text-sm text-gray-600">
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-teal-600 hover:text-teal-500 transition-colors">
+          Sign in
         </Link>
       </p>
     </>

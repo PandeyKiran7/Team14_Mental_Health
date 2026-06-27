@@ -1,6 +1,6 @@
 type ProfileDetailItem = {
   label: string;
-  value?: string | null;
+  value?: string | number | null | undefined;
 };
 
 type ProfileDetailGridProps = {
@@ -16,7 +16,7 @@ export default function ProfileDetailGrid({ items }: ProfileDetailGridProps) {
             {item.label}
           </dt>
           <dd className="mt-1 text-sm font-medium text-zinc-800">
-            {item.value?.trim() ? item.value : "—"}
+            {String(item.value ?? '').trim() ? String(item.value) : "—"}
           </dd>
         </div>
       ))}
