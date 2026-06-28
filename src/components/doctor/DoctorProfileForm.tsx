@@ -31,6 +31,7 @@ type DoctorProfileFormProps = {
   mandatory?: boolean;
   onComplete?: () => void;
   initialData?: any; // the doctor data from the API
+  isOwnProfile?: boolean;
 };
 
 function formatAverageRating(value: number | string | null | undefined): string | undefined {
@@ -125,6 +126,7 @@ export default function DoctorProfileForm({
   mandatory = false,
   onComplete,
   initialData,
+  isOwnProfile: externalIsOwnProfile,
 }: DoctorProfileFormProps = {}) {
   const router = useRouter();
   const [form, setForm] = useState(emptyDoctorProfessionalForm);
@@ -140,7 +142,9 @@ export default function DoctorProfileForm({
   // Determine if we are viewing our own profile
   const loggedInUser = getStoredUser();
   // If initialData is provided, get the userId from it; otherwise use logged-in user's ID for fetch.
-  const isOwnProfile = initialData
+  const isOwnProfile = typeof externalIsOwnProfile === "boolean"
+    ? externalIsOwnProfile
+    : initialData
     ? loggedInUser?.userId === initialData.userId
     : true; // If no initialData, we're viewing the logged-in user's own profile.
 

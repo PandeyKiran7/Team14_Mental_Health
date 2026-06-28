@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookOpenIcon,
   ChartLineUpIcon,
   PulseIcon,
   SquaresFourIcon,
@@ -22,11 +21,6 @@ const NAV_ITEMS = [
     href: "/admin/users",
     label: "Users",
     icon: UsersIcon,
-  },
-  {
-    href: "/admin/content-managers",
-    label: "Internal managers",
-    icon: BookOpenIcon,
   },
   {
     href: "/admin/monitoring",
@@ -87,7 +81,8 @@ export default function AdminSidebar({ open, onClose }: AdminSidebarProps) {
                 ? pathname === href ||
                   pathname.startsWith("/admin/users/") ||
                   pathname.startsWith("/admin/doctors") ||
-                  pathname.startsWith("/admin/patients")
+                  pathname.startsWith("/admin/patients") ||
+                  pathname.startsWith("/admin/content-managers")
                 : pathname === href || pathname.startsWith(`${href}/`);
 
             return (

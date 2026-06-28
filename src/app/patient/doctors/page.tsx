@@ -11,6 +11,7 @@ interface Doctor {
   firstName: string;
   lastName: string;
   profileImageURL: string;
+  isActive?: string;
 }
 
 export default function DoctorsPage() {
@@ -50,6 +51,9 @@ export default function DoctorsPage() {
   };
 
   const filteredDoctors = doctors.filter((doc) => {
+    if (doc.isActive?.toUpperCase() === 'INACTIVE') {
+      return false;
+    }
     const fullName = `${doc.firstName} ${doc.lastName}`.toLowerCase();
     const query = searchTerm.toLowerCase();
     return fullName.includes(query);

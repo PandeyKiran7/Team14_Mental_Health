@@ -343,17 +343,12 @@ export default function BookingsPanel({ userRole }: BookingsPanelProps) {
                           View Appointment
                         </button>
                       ) : (
-                        <>
-                          <button className="flex-1 border border-teal-700 text-teal-700 text-sm font-medium rounded-lg py-2 hover:bg-teal-50 transition">
-                            Cancel Request
-                          </button>
-                          <button
-                            onClick={() => setSelectedBooking(booking)}
-                            className="flex-1 border border-slate-300 text-slate-600 text-sm font-medium rounded-lg py-2 bg-slate-50 hover:bg-slate-100 transition"
-                          >
-                            Details
-                          </button>
-                        </>
+                        <button
+                          onClick={() => setSelectedBooking(booking)}
+                          className="w-full border border-slate-300 text-slate-600 text-sm font-medium rounded-lg py-2 bg-slate-50 hover:bg-slate-100 transition"
+                        >
+                          Details
+                        </button>
                       )
                     ) : (
                       // ─── Doctor actions ──────────────────────────────
@@ -450,11 +445,19 @@ export default function BookingsPanel({ userRole }: BookingsPanelProps) {
                         <StatusDot status={booking.status} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {status === 'COMPLETED' && (
-                          <button className="text-teal-700 font-medium hover:underline">View Report</button>
-                        )}
-                        {status === 'CANCELLED' && <span className="text-slate-400">See Reason</span>}
-                        {status !== 'COMPLETED' && status !== 'CANCELLED' && <span className="text-slate-400">—</span>}
+                        <div className="flex items-center gap-3">
+                          {status === 'COMPLETED' && (
+                            <button className="text-teal-700 font-medium hover:underline">
+                              View Report
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setSelectedBooking(booking)}
+                            className="text-teal-700 font-medium hover:underline"
+                          >
+                            View Details
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

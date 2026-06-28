@@ -5,19 +5,21 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AdminDoctorsPanel from "@/components/admin/AdminDoctorsPanel";
 import AdminPatientsPanel from "@/components/admin/AdminPatientsPanel";
+import ContentManagersTable from "@/components/admin/ContentManagersTable";
 import UsersTable, { useAdminUsers } from "@/components/admin/UsersTable";
 import { cn } from "@/lib/utils";
 
-export type UsersTab = "all" | "patients" | "doctors";
+export type UsersTab = "all" | "patients" | "doctors" | "managers";
 
 const TABS: { id: UsersTab; label: string }[] = [
   { id: "all", label: "All users" },
   { id: "patients", label: "Patients" },
   { id: "doctors", label: "Doctors" },
+  { id: "managers", label: "Internal managers" },
 ];
 
 function parseTab(value: string | null): UsersTab {
-  if (value === "patients" || value === "doctors") return value;
+  if (value === "patients" || value === "doctors" || value === "managers") return value;
   return "all";
 }
 
@@ -33,6 +35,7 @@ export default function AdminUsersTabs() {
       all: users.length,
       patients: users.filter((u) => u.role.toLowerCase() === "patient").length,
       doctors: users.filter((u) => u.role.toLowerCase() === "doctor").length,
+      managers: users.filter((u) => u.role.toLowerCase() === "internal_manager" || u.role.toLowerCase() === "content_manager").length,
     }),
     [users],
   );
@@ -94,17 +97,7 @@ export default function AdminUsersTabs() {
         />
       )}
       {activeTab === "patients" && (
-        <div className="space-y-6">
-          <div className="flex justify-end">
-            <Link
-              href="/admin/users/register/patient"
-              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
-            >
-              Register patient
-            </Link>
-          </div>
-          <AdminPatientsPanel hideRegisterLink />
-        </div>
+        <AdminPatientsPanel />
       )}
       {activeTab === "doctors" && (
         <div className="space-y-6">
@@ -117,6 +110,19 @@ export default function AdminUsersTabs() {
             </Link>
           </div>
           <AdminDoctorsPanel hideRegisterLink />
+        </div>
+      )}
+      {activeTab === "managers" && (
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            <Link
+              href="/admin/content-managers/register"
+              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+            >
+              Register internal manager
+            </Link>
+          </div>
+          <ContentManagersTable />
         </div>
       )}
     </div>

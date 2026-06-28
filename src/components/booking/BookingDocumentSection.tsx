@@ -54,7 +54,7 @@ export default function BookingDocumentSection({
               {downloading ? "Downloading…" : "Download PDF"}
             </button>
           )}
-          {isDoctor && (
+          {isDoctor && !exists && (
             <button
               type="button"
               disabled={saving}

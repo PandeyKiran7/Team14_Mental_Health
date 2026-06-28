@@ -1,5 +1,5 @@
-import AdminContentManagersPanel from "@/components/admin/AdminContentManagersPanel";
+import { redirect } from "next/navigation";
 
 export default function AdminContentManagersPage() {
-  return <AdminContentManagersPanel />;
+  redirect("/admin/users?tab=managers");
 }

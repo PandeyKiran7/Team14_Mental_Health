@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAccessToken } from '@/lib/auth';
+import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { apiGetCall } from '@/helper/apiService';
 import { isApiSuccess } from '@/helper/apiErrors';
 import ProfileTabs from '@/components/profile/ProfileTabs';
@@ -52,6 +52,9 @@ export default function DoctorProfileContent({ doctorId }: DoctorProfileContentP
   const { firstName, lastName, email, mobileNumber, address, gender, dateOfBirth, profileImageURL } = doctorData;
   const doctor = doctorData.doctor;
 
+  const loggedInUser = getStoredUser();
+  const isOwnProfile = loggedInUser?.userId === doctorData.userId;
+
   const user: StoredUser = {
     userId: doctorData.userId,
     firstName,
@@ -81,7 +84,7 @@ export default function DoctorProfileContent({ doctorId }: DoctorProfileContentP
           {
             id: 'professional',
             label: 'Professional profile',
-            content: <DoctorProfileForm initialData={doctor} />,
+            content: <DoctorProfileForm initialData={doctor} isOwnProfile={isOwnProfile} />,
           },
         ]}
       />

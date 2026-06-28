@@ -96,7 +96,7 @@ export default function AdminRegisterContentManagerForm() {
         return;
       }
 
-      router.push("/admin/content-managers");
+      router.push("/admin/users?tab=managers");
     } catch {
       setError("Cannot reach backend.");
     } finally {
@@ -108,7 +108,7 @@ export default function AdminRegisterContentManagerForm() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-end">
         <Link
-          href="/admin/content-managers"
+          href="/admin/users?tab=managers"
           className="text-sm font-medium text-teal-700 underline hover:text-teal-900"
         >
           Back to internal managers

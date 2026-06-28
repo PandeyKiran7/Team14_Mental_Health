@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { EyeIcon, PencilIcon } from "@phosphor-icons/react";
 import { API_CONSTANTS } from "@/constants/staticConstant";
 import { getApiErrorMessage } from "@/helper/apiErrors";
@@ -14,11 +13,7 @@ import AdminPatientEditModal from "@/components/admin/AdminPatientEditModal";
 import AdminPatientMedicalLookup from "@/components/admin/AdminPatientMedicalLookup";
 import UserStatusModal from "@/components/admin/UserStatusModal";
 
-export default function AdminPatientsPanel({
-  hideRegisterLink = false,
-}: {
-  hideRegisterLink?: boolean;
-}) {
+export default function AdminPatientsPanel() {
   const [patients, setPatients] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,17 +52,6 @@ export default function AdminPatientsPanel({
 
   return (
     <div className="space-y-8">
-      {!hideRegisterLink && (
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <Link
-            href="/admin/users/register/patient"
-            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
-          >
-            Register patient
-          </Link>
-        </div>
-      )}
-
       {loading && (
         <div className="rounded-xl border border-teal-100 bg-white p-8 text-center">
           <p className="text-sm text-zinc-500">Loading patients…</p>
