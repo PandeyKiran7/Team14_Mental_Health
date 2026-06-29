@@ -12,6 +12,15 @@ export default function PatientProfileContent() {
 
   useEffect(() => {
     setUser(getStoredUser());
+
+    const handleAuthChange = () => {
+      setUser(getStoredUser());
+    };
+
+    window.addEventListener("auth-change", handleAuthChange);
+    return () => {
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
   }, []);
 
   const handleProfileImageUpdated = useCallback((profileImageURL?: string) => {

@@ -28,6 +28,7 @@ type LoginUser = {
   address?: string;
   gender?: string;
   password?: string;
+  profileImageURL?: string;
 };
 
 type LoginPayload = {
@@ -81,6 +82,7 @@ export default function LoginPage() {
         mobileNumber: safeUser.mobileNumber,
         address: safeUser.address,
         gender: safeUser.gender,
+        profileImageURL: safeUser.profileImageURL,
       });
 
       const role = payload.user.role?.toLowerCase();

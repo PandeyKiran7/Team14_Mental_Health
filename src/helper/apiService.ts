@@ -8,6 +8,7 @@ export type ApiCallData = {
   endpoint: keyof typeof API_ENDPOINTS;
   token?: string;
   pathParams?: Record<string, string | number>;
+  queryParams?: Record<string, string | number | boolean>;
 } & Record<string, unknown>;
 
 const getAuthHeaders = (token?: string) => {
@@ -56,11 +57,14 @@ export const apiPostCall = async (data: ApiCallData) => {
     return { status: 400, data: { message: "No endpoint provided" } };
   }
 
-  const { endpoint, token, pathParams, ...body } = data;
+  const { endpoint, token, pathParams, queryParams, ...body } = data;
   const url = resolveUrl({ endpoint, pathParams });
   const authToken = token ?? getAccessToken() ?? undefined;
 
-  const response = await axios.post(url, body, axiosConfig(authToken));
+  const response = await axios.post(url, body, {
+    ...axiosConfig(authToken),
+    params: queryParams,
+  });
   maybeHandleSessionExpired(response.status, Boolean(authToken));
   return response;
 };

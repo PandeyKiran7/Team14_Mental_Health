@@ -1,10 +1,12 @@
 import { isApiSuccess, resolveAdminMutationError } from "@/helper/apiErrors";
-import { apiPostCall } from "@/helper/apiService";
+import { apiGetCall, apiPostCall } from "@/helper/apiService";
 import { getAccessToken } from "@/lib/auth";
 import {
   normalizeDoctorFinanceDetails,
+  normalizePayoutHistory,
   normalizePayoutResult,
   type DoctorFinanceDetails,
+  type PayoutHistory,
   type PayoutResult,
 } from "@/types/doctorFinance";
 
@@ -16,15 +18,16 @@ function getToken(): string | undefined {
   return getAccessToken() ?? undefined;
 }
 
-/** POST /api/v1/doctor-finance-details/:doctorId — doctor user id in URL */
+/** GET /api/v1/doctor-finance-details/:doctorId?settled=false */
 export async function fetchDoctorFinanceDetails(
   doctorUserId: number,
 ): Promise<ActionResult<DoctorFinanceDetails>> {
   try {
-    const response = await apiPostCall({  
+    const response = await apiGetCall({
       endpoint: "doctor_finance_details",
       pathParams: { doctorId: doctorUserId },
       token: getToken(),
+      settled: false,
     });
 
     if (response.status === 404) {
@@ -49,7 +52,7 @@ export async function fetchDoctorFinanceDetails(
 
     if (process.env.NODE_ENV === "development") {
       console.info(
-        `[Team14] POST /api/v1/doctor-finance-details/${doctorUserId}`,
+        `[Team14] GET /api/v1/doctor-finance-details/${doctorUserId}?settled=false`,
         data,
       );
     }
@@ -86,6 +89,47 @@ export async function payDoctorSalary(
 
     if (process.env.NODE_ENV === "development") {
       console.info(`[Team14] POST /api/v1/payout/${doctorUserId}`, data);
+    }
+
+    return { ok: true, data };
+  } catch {
+    return { ok: false, message: "Cannot reach backend." };
+  }
+}
+
+/** GET /api/v1/finance/payout-history/:userId */
+export async function fetchPayoutHistory(
+  doctorUserId: number,
+): Promise<ActionResult<PayoutHistory>> {
+  try {
+    const response = await apiGetCall({
+      endpoint: "payout_history",
+      pathParams: { userId: doctorUserId },
+      token: getToken(),
+    });
+
+    if (response.status === 404) {
+      return { ok: true, data: [] };
+    }
+
+    if (!isApiSuccess(response.status)) {
+      return {
+        ok: false,
+        message: resolveAdminMutationError(
+          response,
+          "Failed to load payout history.",
+        ),
+        status: response.status,
+      };
+    }
+
+    const data = normalizePayoutHistory(response.data);
+
+    if (process.env.NODE_ENV === "development") {
+      console.info(
+        `[Team14] GET /api/v1/finance/payout-history/${doctorUserId}`,
+        data,
+      );
     }
 
     return { ok: true, data };

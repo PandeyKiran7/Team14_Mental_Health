@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { LogOut, User } from "lucide-react";
 import { getProfilePath } from "@/lib/profileRoutes";
 import { getStoredUser, signOut, type StoredUser } from "@/lib/auth";
+import { resolveProfileImageUrl } from "@/lib/profileImageApi";
 
 function getInitials(user: StoredUser | null): string {
   if (!user) return "U";
@@ -31,6 +32,15 @@ export default function UserNav() {
 
   useEffect(() => {
     setUser(getStoredUser());
+
+    const handleAuthChange = () => {
+      setUser(getStoredUser());
+    };
+
+    window.addEventListener("auth-change", handleAuthChange);
+    return () => {
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -55,6 +65,7 @@ export default function UserNav() {
 
   const displayName = getDisplayName(user);
   const profilePath = getProfilePath(user?.role);
+  const imageSrc = user ? resolveProfileImageUrl(user.profileImageURL) : null;
 
   return (
     <div className="relative" ref={popupRef}>
@@ -66,9 +77,17 @@ export default function UserNav() {
         aria-haspopup="menu"
         aria-label="Open user menu"
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-100 text-sm font-semibold text-teal-700">
-          {getInitials(user)}
-        </div>
+        {imageSrc ? (
+          <img
+            src={imageSrc}
+            alt={displayName}
+            className="h-9 w-9 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-100 text-sm font-semibold text-teal-700">
+            {getInitials(user)}
+          </div>
+        )}
       </button>
 
       {open && (
@@ -78,9 +97,17 @@ export default function UserNav() {
         >
           <div className="border-b border-gray-100 px-4 py-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-100 text-lg font-semibold text-teal-700">
-                {getInitials(user)}
-              </div>
+              {imageSrc ? (
+                <img
+                  src={imageSrc}
+                  alt={displayName}
+                  className="h-12 w-12 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-100 text-lg font-semibold text-teal-700">
+                  {getInitials(user)}
+                </div>
+              )}
               <div className="min-w-0">
                 <p className="truncate text-base font-medium text-gray-800">
                   {displayName}

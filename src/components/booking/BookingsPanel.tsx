@@ -7,6 +7,7 @@ import {
   ChevronLeft, ChevronRight, Plus
 } from 'lucide-react';
 import { apiGetCall } from '@/helper/apiService';
+import { resolveProfileImageUrl } from '@/lib/profileImageApi';
 
 // ─── Types ───────────────────────────────────────────────────────────────
 interface Booking {
@@ -17,8 +18,8 @@ interface Booking {
   endTime: string;
   notes?: string;
   meetLink?: string | null;
-  patient: { id: number; name: string };
-  doctor: { id: number; name: string; specialization?: string };
+  patient: { id: number; name: string; profileImageURL?: string };
+  doctor: { id: number; name: string; specialization?: string; profileImageURL?: string };
 }
 
 interface BookingsPanelProps {
@@ -87,8 +88,30 @@ const getInitials = (name: string) => {
 
 const getAvatarColor = (id: number) => AVATAR_PALETTE[id % AVATAR_PALETTE.length];
 
-const Avatar = ({ id, name, size = 'md' }: { id: number; name: string; size?: 'sm' | 'md' }) => {
+const Avatar = ({
+  id,
+  name,
+  profileImageURL,
+  size = 'md',
+}: {
+  id: number;
+  name: string;
+  profileImageURL?: string;
+  size?: 'sm' | 'md';
+}) => {
   const dims = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-11 h-11 text-sm';
+  const imageSrc = resolveProfileImageUrl(profileImageURL);
+
+  if (imageSrc) {
+    return (
+      <img
+        src={imageSrc}
+        alt={name}
+        className={`${dims} rounded-full object-cover shrink-0`}
+      />
+    );
+  }
+
   return (
     <div className={`${dims} rounded-full flex items-center justify-center font-semibold ${getAvatarColor(id)} shrink-0`}>
       {getInitials(name)}
@@ -260,7 +283,7 @@ export default function BookingsPanel({ userRole }: BookingsPanelProps) {
                   {/* Top row */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      <Avatar id={otherId} name={otherName} />
+                      <Avatar id={otherId} name={otherName} profileImageURL={other.profileImageURL} />
                       <div>
                         <h3 className="font-semibold text-slate-800 leading-tight">
                           {otherName}
@@ -429,7 +452,7 @@ export default function BookingsPanel({ userRole }: BookingsPanelProps) {
                     <tr key={booking.id} className="hover:bg-slate-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <Avatar id={other.id} name={other.name} size="sm" />
+                          <Avatar id={other.id} name={other.name} profileImageURL={other.profileImageURL} size="sm" />
                           <span className="text-sm font-medium text-slate-800">
                             {other.name}
                           </span>

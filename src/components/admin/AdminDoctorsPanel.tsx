@@ -128,7 +128,7 @@ export default function AdminDoctorsPanel({
                       type="button"
                       title="Edit account"
                       onClick={() => setEditDoctor(doctor)}
-                      className="rounded border border-teal-200 p-2 hover:bg-teal-50"
+                      className="mr-2 rounded border border-teal-200 p-2 hover:bg-teal-50"
                     >
                       <PencilIcon size={16} className="text-teal-800" />
                     </button>

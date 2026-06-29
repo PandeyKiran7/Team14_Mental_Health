@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CurrencyDollarIcon } from "@phosphor-icons/react";
 import AdminDoctorFinanceModal from "@/components/admin/AdminDoctorFinanceModal";
 import { getAccessToken } from "@/lib/auth";
-import { getDoctorUsersFromAllUsers } from "@/lib/userApi";
+import { getAllDoctors } from "@/lib/userApi";
 import type { AdminUser } from "@/types/admin";
 
 export default function DoctorFinancePanel() {
@@ -17,7 +17,7 @@ export default function DoctorFinancePanel() {
     setLoading(true);
     setError(null);
 
-    const result = await getDoctorUsersFromAllUsers(getAccessToken() ?? undefined);
+    const result = await getAllDoctors(getAccessToken() ?? undefined);
 
     if (!result.ok) {
       setError(result.message);
@@ -73,7 +73,17 @@ export default function DoctorFinancePanel() {
                     Dr. {doctor.firstName} {doctor.lastName}
                   </td>
                   <td className="px-4 py-3 text-zinc-600">{doctor.email}</td>
-                  <td className="px-4 py-3">{doctor.isActive}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                        doctor.isActive === "ACTIVE"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {doctor.isActive}
+                    </span>
+                  </td>
                   <td className="px-4 py-3">
                     <button
                       type="button"

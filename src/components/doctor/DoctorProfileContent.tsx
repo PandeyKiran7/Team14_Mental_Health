@@ -53,8 +53,15 @@ export default function DoctorProfileContent({ doctorId }: DoctorProfileContentP
       void run();
     }
 
+    const handleAuthChange = () => {
+      void loadProfile();
+    };
+
+    window.addEventListener("auth-change", handleAuthChange);
+
     return () => {
       cancelled = true;
+      window.removeEventListener("auth-change", handleAuthChange);
     };
   }, [doctorId, loadProfile]);
 
@@ -121,7 +128,7 @@ export default function DoctorProfileContent({ doctorId }: DoctorProfileContentP
             label: 'Professional profile',
             content: (
               <DoctorProfileForm
-                doctorRecordId={isOwnProfile ? undefined : doctorRecordId}
+                initialData={isOwnProfile ? undefined : (doctorData.doctor as Record<string, unknown>)}
                 isOwnProfile={isOwnProfile}
               />
             ),

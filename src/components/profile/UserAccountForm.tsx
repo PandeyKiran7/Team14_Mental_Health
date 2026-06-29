@@ -27,6 +27,14 @@ import ProfileAccountHeader from "@/components/profile/ProfileAccountHeader";
 import ProfileDetailGrid from "@/components/profile/ProfileDetailGrid";
 import ProfileEditButton from "@/components/profile/ProfileEditButton";
 import ProfileSection from "@/components/profile/ProfileSection";
+import { resolveProfileImageUrl, uploadProfileImage } from "@/lib/profileImageApi";
+
+function getInitials(user: StoredUser): string {
+  const first = user.firstName?.[0] ?? "";
+  const last = user.lastName?.[0] ?? "";
+  const initials = `${first}${last}`.toUpperCase();
+  return initials || user.email?.[0]?.toUpperCase() || "U";
+}
 
 // ─── Props ──────────────────────────────────────────────────────────────
 type UserAccountFormProps = {
@@ -166,6 +174,30 @@ export default function UserAccountForm({ initialUser, hideHeader = false }: Use
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      return;
+    }
+
+    setSelectedFile(file);
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   // ── Determine if we are viewing our own profile ──
   const loggedInUser = getStoredUser();
@@ -304,6 +336,8 @@ export default function UserAccountForm({ initialUser, hideHeader = false }: Use
     setEditing(false);
     setError(null);
     setMessage(null);
+    setSelectedFile(null);
+    setPreviewUrl(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -332,15 +366,29 @@ export default function UserAccountForm({ initialUser, hideHeader = false }: Use
       return;
     }
 
-    const payload = {
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      mobileNumber: form.mobileNumber.trim(),
-      address: form.address.trim() || undefined,
-      gender: form.gender,
-    };
+    let newProfileImageURL = user.profileImageURL;
 
     try {
+      // 1) If an image file was selected, upload it first!
+      if (selectedFile) {
+        const uploadResult = await uploadProfileImage(selectedFile, token);
+        if (!uploadResult.ok) {
+          setError(uploadResult.message || "Failed to upload profile image.");
+          setSaving(false);
+          return;
+        }
+        newProfileImageURL = uploadResult.profileImageURL ?? undefined;
+      }
+
+      // 2) Save user text details
+      const payload = {
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        mobileNumber: form.mobileNumber.trim(),
+        address: form.address.trim() || undefined,
+        gender: form.gender,
+      };
+
       const response = await apiPatchCall({
         endpoint: "update_user",
         ...payload,
@@ -359,12 +407,15 @@ export default function UserAccountForm({ initialUser, hideHeader = false }: Use
         mobileNumber: form.mobileNumber.trim(),
         address: form.address.trim(),
         gender: form.gender,
+        profileImageURL: newProfileImageURL,
       };
 
       setStoredUser(updatedUser);
       setUser(updatedUser);
       setMessage("Account updated successfully.");
       setEditing(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
     } catch (submitError) {
       setError(getNetworkErrorMessage(submitError));
     } finally {
@@ -417,6 +468,40 @@ export default function UserAccountForm({ initialUser, hideHeader = false }: Use
         </div>
       ) : (
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+          {/* Profile Image Field inside Edit Form */}
+          <div className="flex items-center gap-6 border-b border-zinc-100 pb-4 mb-4">
+            <div className="relative shrink-0">
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="h-16 w-16 rounded-full object-cover ring-2 ring-teal-500"
+                />
+              ) : user.profileImageURL ? (
+                <img
+                  src={resolveProfileImageUrl(user.profileImageURL) || ""}
+                  alt="Current"
+                  className="h-16 w-16 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-100 text-lg font-semibold text-teal-700">
+                  {getInitials(user)}
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <FormField label="Profile picture" htmlFor="profileImage">
+                <input
+                  id="profileImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="w-full text-xs text-zinc-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer"
+                />
+              </FormField>
+            </div>
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2">
             <FormInput
               name="firstName"

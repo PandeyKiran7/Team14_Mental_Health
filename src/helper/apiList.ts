@@ -57,8 +57,9 @@ export const API_ENDPOINTS = {
   archived_blogs: "/api/v1/archived-blogs",
 
   // Payment & Payout
-  doctor_finance_details: "/api/v1/doctor-finance-details/:doctorId",
+  doctor_finance_details: "/api/v1/doctor-finance-details/:userId",
   pay_salary: "/api/v1/payout/:userId",
+  payout_history: "/api/v1/finance/payout-history/:userId",
 } as const;
 
 export function resolveApiUrl(

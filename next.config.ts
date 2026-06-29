@@ -32,20 +32,20 @@ const nextConfig: NextConfig = {
         protocol: new URL(backendUrl).protocol.slice(0, -1), // "http" or "https"
         hostname: backendHost,
         port: backendPort,
-        pathname: "/public/profile/**", // adjust if your images are elsewhere
+        pathname: "/public/**",
       },
       // If you ever use localhost or 127.0.0.1 explicitly
       {
         protocol: "http",
         hostname: "localhost",
         port: "4000",
-        pathname: "/public/profile/**",
+        pathname: "/public/**",
       },
       {
         protocol: "http",
         hostname: "127.0.0.1",
         port: "4000",
-        pathname: "/public/profile/**",
+        pathname: "/public/**",
       },
     ],
   },
