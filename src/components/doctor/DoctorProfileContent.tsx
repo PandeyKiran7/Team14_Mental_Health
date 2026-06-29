@@ -1,56 +1,88 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getAccessToken, getStoredUser } from '@/lib/auth';
-import { apiGetCall } from '@/helper/apiService';
-import { isApiSuccess } from '@/helper/apiErrors';
+import { useCallback, useEffect, useState } from 'react';
+import { getAccessToken, getStoredUser, setStoredUser } from '@/lib/auth';
 import ProfileTabs from '@/components/profile/ProfileTabs';
 import UserAccountForm from '@/components/profile/UserAccountForm';
 import DoctorProfileForm from '@/components/doctor/DoctorProfileForm';
 import ProfileAccountHeader from '@/components/profile/ProfileAccountHeader';
 import { StoredUser } from '@/lib/auth';
+import {
+  fetchDoctorViewProfile,
+  type DoctorViewProfile,
+} from '@/lib/profileImageApi';
 
 interface DoctorProfileContentProps {
   doctorId: number;
 }
 
 export default function DoctorProfileContent({ doctorId }: DoctorProfileContentProps) {
-  const [doctorData, setDoctorData] = useState<any>(null);
+  const [doctorData, setDoctorData] = useState<DoctorViewProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchDoctor() {
-      try {
-        const token = getAccessToken();
-        const response = await apiGetCall({
-          endpoint: 'view_profile',
-          pathParams: { userId: doctorId },
-          token,
-        });
+  const loadProfile = useCallback(async () => {
+    setError(null);
 
-        if (isApiSuccess(response.status)) {
-          setDoctorData(response.data.message);
-        } else {
-          setError('Failed to load doctor profile');
-        }
-      } catch (err) {
-        console.error(err);
-        setError('Error loading doctor profile');
-      } finally {
+    const result = await fetchDoctorViewProfile(
+      doctorId,
+      getAccessToken() ?? undefined,
+    );
+
+    if (!result.ok) {
+      setError(result.message);
+      setDoctorData(null);
+      return;
+    }
+
+    setDoctorData(result.data);
+  }, [doctorId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      setLoading(true);
+      await loadProfile();
+      if (!cancelled) {
         setLoading(false);
       }
     }
 
-    if (doctorId) fetchDoctor();
-  }, [doctorId]);
+    if (doctorId) {
+      void run();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [doctorId, loadProfile]);
+
+  async function handleProfileImageUpdated(profileImageURL?: string) {
+    await loadProfile();
+
+    const loggedInUser = getStoredUser();
+    if (loggedInUser?.userId === doctorId) {
+      setStoredUser({ ...loggedInUser, profileImageURL });
+    }
+  }
 
   if (loading) return <div className="p-6 text-slate-400">Loading doctor profile…</div>;
   if (error) return <div className="p-6 text-rose-500">{error}</div>;
   if (!doctorData) return null;
 
-  const { firstName, lastName, email, mobileNumber, address, gender, dateOfBirth, profileImageURL } = doctorData;
+  const {
+    firstName,
+    lastName,
+    email,
+    mobileNumber,
+    address,
+    gender,
+    profileImageURL,
+  } = doctorData;
   const doctor = doctorData.doctor;
+  const doctorRecordId =
+    doctor && typeof doctor.id === "number" ? doctor.id : undefined;
 
   const loggedInUser = getStoredUser();
   const isOwnProfile = loggedInUser?.userId === doctorData.userId;
@@ -69,10 +101,13 @@ export default function DoctorProfileContent({ doctorId }: DoctorProfileContentP
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
-      {/* Header with avatar, name, email, role */}
-      <ProfileAccountHeader user={user} className="mb-2" />
+      <ProfileAccountHeader
+        user={user}
+        className="mb-2"
+        allowImageUpload={isOwnProfile}
+        onProfileImageUpdated={(url) => void handleProfileImageUpdated(url)}
+      />
 
-      {/* Tabs – each tab shows the data in read-only mode (or edit mode for owner) */}
       <ProfileTabs
         defaultTab="account"
         tabs={[
@@ -84,7 +119,12 @@ export default function DoctorProfileContent({ doctorId }: DoctorProfileContentP
           {
             id: 'professional',
             label: 'Professional profile',
-            content: <DoctorProfileForm initialData={doctor} isOwnProfile={isOwnProfile} />,
+            content: (
+              <DoctorProfileForm
+                doctorRecordId={isOwnProfile ? undefined : doctorRecordId}
+                isOwnProfile={isOwnProfile}
+              />
+            ),
           },
         ]}
       />

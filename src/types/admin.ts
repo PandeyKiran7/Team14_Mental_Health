@@ -11,6 +11,7 @@ export type AdminUser = {
   mobileNumber?: string;
   gender?: string;
   address?: string;
+  profileImageURL?: string;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,6 +27,7 @@ function mapUser(u: any): AdminUser {
     mobileNumber: u.mobileNumber,
     gender: u.gender,
     address: u.address,
+    profileImageURL: u.profileImageURL,
   };
 }
 

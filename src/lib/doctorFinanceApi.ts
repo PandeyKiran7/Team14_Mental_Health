@@ -21,7 +21,7 @@ export async function fetchDoctorFinanceDetails(
   doctorUserId: number,
 ): Promise<ActionResult<DoctorFinanceDetails>> {
   try {
-    const response = await apiPostCall({
+    const response = await apiPostCall({  
       endpoint: "doctor_finance_details",
       pathParams: { doctorId: doctorUserId },
       token: getToken(),

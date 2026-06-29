@@ -82,6 +82,9 @@ export function getApiErrorMessage(
   const record = data as ApiErrorBody;
 
   if (record.success === false) {
+    const fromErrors = formatFieldIssues(record.errors);
+    if (fromErrors) return fromErrors;
+
     const fromData = extractString(record.data);
     const fromMessage = extractString(record.message);
     if (fromData) return fromData;
@@ -90,6 +93,9 @@ export function getApiErrorMessage(
 
   const zodMessage = formatZodIssues(record.details);
   if (zodMessage) return zodMessage;
+
+  const fromErrors = formatFieldIssues(record.errors);
+  if (fromErrors) return fromErrors;
 
   const fromMessage = extractString(record.message);
   const fromData = extractString(record.data);
@@ -106,9 +112,6 @@ export function getApiErrorMessage(
   if (fromMessage && fromMessage !== "Validation error") return fromMessage;
   if (fromData) return fromData;
   if (fromMessage) return fromMessage;
-
-  const fromErrors = formatFieldIssues(record.errors);
-  if (fromErrors) return fromErrors;
 
   return resolvedFallback;
 }

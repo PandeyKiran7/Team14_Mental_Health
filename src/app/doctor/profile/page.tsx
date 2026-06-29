@@ -6,14 +6,12 @@ import { getStoredUser } from '@/lib/auth';
 import DoctorProfileContent from '@/components/doctor/DoctorProfileContent';
 
 export default function DoctorProfilePage() {
-  console.log('🔵 DoctorProfilePage rendered');
 
   const searchParams = useSearchParams();
   const [doctorId, setDoctorId] = useState<number | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   const doctorIdFromUrl = searchParams.get('doctorId');
-  console.log('🔵 doctorId from URL:', doctorIdFromUrl);
 
   useEffect(() => {
     if (doctorIdFromUrl) {
@@ -21,7 +19,6 @@ export default function DoctorProfilePage() {
       setCheckingAuth(false);
     } else {
       const user = getStoredUser();
-      console.log('🔵 doctorId from stored user:', user?.userId);
       if (user && user.userId) {
         setDoctorId(user.userId);
       }

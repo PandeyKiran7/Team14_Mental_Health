@@ -38,6 +38,19 @@ export const apiFormPostCall = async (
   return response;
 };
 
+export const apiFormPatchCall = async (
+  endpoint: keyof typeof API_ENDPOINTS,
+  formData: FormData,
+  token?: string,
+) => {
+  const url = resolveApiUrl(endpoint);
+  const authToken = token ?? getAccessToken() ?? undefined;
+
+  const response = await axios.patch(url, formData, axiosConfig(authToken));
+  maybeHandleSessionExpired(response.status, Boolean(authToken));
+  return response;
+};
+
 export const apiPostCall = async (data: ApiCallData) => {
   if (!data?.endpoint) {
     return { status: 400, data: { message: "No endpoint provided" } };

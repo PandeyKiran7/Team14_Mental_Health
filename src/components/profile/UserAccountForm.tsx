@@ -18,7 +18,10 @@ import {
   type StoredUser,
 } from "@/lib/auth";
 import { isAdminRole } from "@/lib/userRoles";
-import { normalizeUserDetail } from "@/types/admin";
+import {
+  normalizeUserDetail,
+  normalizeUserWithMedicalData,
+} from "@/types/admin";
 import ApiMessage from "@/components/ui/ApiMessage";
 import ProfileAccountHeader from "@/components/profile/ProfileAccountHeader";
 import ProfileDetailGrid from "@/components/profile/ProfileDetailGrid";
@@ -64,8 +67,94 @@ function mapStoredToForm(user: StoredUser): AccountFormState {
   };
 }
 
+const NAME_PATTERN = /^[A-Za-z\s]{2,50}$/;
+
+function validateAccountForm(form: AccountFormState): string | null {
+  if (!form.firstName.trim() || !form.lastName.trim()) {
+    return "First name and last name are required.";
+  }
+
+  if (!NAME_PATTERN.test(form.firstName.trim())) {
+    return "First name can only contain letters and must be 2–50 characters.";
+  }
+
+  if (!NAME_PATTERN.test(form.lastName.trim())) {
+    return "Last name can only contain letters and must be 2–50 characters.";
+  }
+
+  if (!/^[0-9]{7,15}$/.test(form.mobileNumber.trim())) {
+    return "Mobile number must be 7–15 digits.";
+  }
+
+  return null;
+}
+
 function formatGender(value: string): string {
   return GENDER_OPTIONS.find((option) => option.value === value)?.label ?? value;
+}
+
+type AccountDetail = {
+  firstName?: string;
+  lastName?: string;
+  mobileNumber?: string;
+  address?: string;
+  gender?: string;
+  isActive?: string;
+  profileImageURL?: string;
+};
+
+function accountDetailFromResponse(
+  body: unknown,
+  role?: string,
+): AccountDetail | null {
+  if (role?.toUpperCase() === "PATIENT") {
+    const detail = normalizeUserWithMedicalData(body);
+    if (!detail) return null;
+    return {
+      firstName: detail.firstName,
+      lastName: detail.lastName,
+      mobileNumber: detail.mobileNumber,
+      address: detail.address,
+      gender: detail.gender,
+      isActive: detail.isActive,
+      profileImageURL: detail.profileImageURL,
+    };
+  }
+
+  const detail = normalizeUserDetail(body);
+  return detail;
+}
+
+async function fetchAccountDetail(
+  userId: number,
+  role: string | undefined,
+  token: string,
+) {
+  if (isAdminRole(role)) {
+    return apiGetCall({
+      endpoint: "user_by_id",
+      pathParams: { userId },
+      token,
+    });
+  }
+
+  if (role?.toUpperCase() === "PATIENT") {
+    return apiGetCall({
+      endpoint: "user_medical_data",
+      pathParams: { userId },
+      token,
+    });
+  }
+
+  if (role?.toUpperCase() === "DOCTOR") {
+    return apiGetCall({
+      endpoint: "view_profile",
+      pathParams: { userId },
+      token,
+    });
+  }
+
+  return null;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────
@@ -114,36 +203,36 @@ export default function UserAccountForm({ initialUser, hideHeader = false }: Use
           return;
         }
 
-        // For admin users, fetch full details from the backend.
-        if (isAdminRole(stored.role)) {
-          const response = await apiGetCall({
-            endpoint: "user_by_id",
-            pathParams: { userId: stored.userId },
-            token,
-          });
+        const response = await fetchAccountDetail(
+          stored.userId,
+          stored.role,
+          token,
+        );
 
-          if (isApiSuccess(response.status)) {
-            const detail = normalizeUserDetail(response.data);
-            if (detail) {
-              setForm({
-                firstName: detail.firstName ?? "",
-                lastName: detail.lastName ?? "",
-                mobileNumber: detail.mobileNumber ?? "",
-                address: detail.address ?? "",
-                gender: detail.gender ?? "MALE",
-              });
-              setUser({
-                ...stored,
-                firstName: detail.firstName,
-                lastName: detail.lastName,
-                mobileNumber: detail.mobileNumber,
-                address: detail.address,
-                gender: detail.gender,
-                isActive: detail.isActive,
-              });
-              setLoading(false);
-              return;
-            }
+        if (response && isApiSuccess(response.status)) {
+          const detail = accountDetailFromResponse(response.data, stored.role);
+          if (detail) {
+            setForm({
+              firstName: detail.firstName ?? "",
+              lastName: detail.lastName ?? "",
+              mobileNumber: detail.mobileNumber ?? "",
+              address: detail.address ?? "",
+              gender: detail.gender ?? "MALE",
+            });
+            const updatedUser: StoredUser = {
+              ...stored,
+              firstName: detail.firstName,
+              lastName: detail.lastName,
+              mobileNumber: detail.mobileNumber,
+              address: detail.address,
+              gender: detail.gender,
+              isActive: detail.isActive,
+              profileImageURL: detail.profileImageURL,
+            };
+            setUser(updatedUser);
+            setStoredUser(updatedUser);
+            setLoading(false);
+            return;
           }
         }
 
@@ -172,6 +261,38 @@ export default function UserAccountForm({ initialUser, hideHeader = false }: Use
 
   const isAdmin = isAdminRole(user.role);
 
+  async function refreshProfileImage(profileImageURL?: string) {
+    const stored = getStoredUser();
+    const token = getAccessToken();
+
+    if (stored?.userId && token) {
+      const response = await fetchAccountDetail(
+        stored.userId,
+        stored.role,
+        token,
+      );
+
+      if (response && isApiSuccess(response.status)) {
+        const detail = accountDetailFromResponse(response.data, stored.role);
+        if (detail) {
+          const updatedUser: StoredUser = {
+            ...stored,
+            profileImageURL: detail.profileImageURL ?? profileImageURL,
+          };
+          setUser((prev) => (prev ? { ...prev, profileImageURL: updatedUser.profileImageURL } : prev));
+          setStoredUser(updatedUser);
+          return;
+        }
+      }
+    }
+
+    if (profileImageURL !== undefined && user) {
+      const updatedUser = { ...user, profileImageURL };
+      setUser(updatedUser);
+      if (stored) setStoredUser({ ...stored, profileImageURL });
+    }
+  }
+
   function updateField(field: keyof AccountFormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
@@ -197,8 +318,9 @@ export default function UserAccountForm({ initialUser, hideHeader = false }: Use
       return;
     }
 
-    if (!/^[0-9]{7,15}$/.test(form.mobileNumber.trim())) {
-      setError("Mobile number must be 10 digits.");
+    const validationError = validateAccountForm(form);
+    if (validationError) {
+      setError(validationError);
       setSaving(false);
       return;
     }
@@ -266,7 +388,14 @@ export default function UserAccountForm({ initialUser, hideHeader = false }: Use
       }
       action={showEditButton ? <ProfileEditButton onClick={() => setEditing(true)} /> : null}
     >
-      {!hideHeader && <ProfileAccountHeader user={user} className="mb-6" />}
+      {!hideHeader && (
+        <ProfileAccountHeader
+          user={user}
+          className="mb-6"
+          allowImageUpload={isOwnProfile && !isAdmin}
+          onProfileImageUpdated={(url) => void refreshProfileImage(url)}
+        />
+      )}
 
       {loading ? (
         <p className="text-sm text-zinc-500">Loading account details…</p>

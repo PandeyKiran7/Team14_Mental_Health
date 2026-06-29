@@ -2,6 +2,7 @@
 'use client';
 
 import Image from 'next/image';
+import { resolveProfileImageUrl } from '@/lib/profileImageApi';
 
 interface Doctor {
   userId: number;
@@ -30,16 +31,26 @@ export default function DoctorCard({ doctor, onBookAppointment, onViewProfile }:
       })
     : 'N/A';
 
+  const imageSrc = resolveProfileImageUrl(doctor.profileImageURL);
+
   return (
     <div className="border rounded-lg p-4 shadow hover:shadow-lg transition">
       <div className="flex items-center gap-4">
-        <Image
-          src={doctor.profileImageURL || '/default-avatar.png'}
-          alt={`${doctor.firstName} ${doctor.lastName}`}
-          width={64}
-          height={64}
-          className="rounded-full object-cover"
-        />
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt={`${doctor.firstName} ${doctor.lastName}`}
+            width={64}
+            height={64}
+            className="rounded-full object-cover"
+            unoptimized
+          />
+        ) : (
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-600 text-lg font-semibold text-white">
+            {doctor.firstName?.[0]}
+            {doctor.lastName?.[0]}
+          </div>
+        )}
         <div>
           <h3 className="font-semibold text-lg">
             Dr. {doctor.firstName} {doctor.lastName}

@@ -19,6 +19,7 @@ export type StoredUser = {
   address?: string;
   gender?: string;
   isActive?: string;
+  profileImageURL?: string;
 };
 
 export function getStoredUser(): StoredUser | null {
@@ -59,7 +60,6 @@ export function isAccessTokenExpired(token?: string | null): boolean {
 export function setAccessToken(accessToken: string) {
   if (typeof window === "undefined") return;
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  console.log("[auth] accessToken:", accessToken);
   window.dispatchEvent(new Event("auth-change"));
 }
 

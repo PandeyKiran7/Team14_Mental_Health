@@ -41,6 +41,9 @@ export default function DoctorPatientMedicalModal({
       return;
     }
 
+
+
+
     const patientUserId = userId;
 
     async function load() {

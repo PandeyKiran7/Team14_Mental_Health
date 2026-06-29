@@ -12,10 +12,12 @@ import ApiMessage from "@/components/ui/ApiMessage";
 import { getNetworkErrorMessage } from "@/helper/apiErrors";
 import {
   fetchDoctorProfessionalDetails,
+  fetchDoctorProfessionalDetailsById,
   getCachedDoctorProfessionalDetails,
   saveDoctorProfessionalDetails,
   type DoctorProfessionalFetchResult,
 } from "@/lib/doctorProfessionalApi";
+import { getAccessToken } from "@/lib/auth";
 import {
   doctorDataToForm,
   emptyDoctorProfessionalForm,
@@ -30,7 +32,9 @@ const BIOGRAPHY_MAX_LENGTH = 1000;
 type DoctorProfileFormProps = {
   mandatory?: boolean;
   onComplete?: () => void;
-  initialData?: any; // the doctor data from the API
+  /** Doctor table primary key — read-only load for other doctors via GET /doctor-data/:doctorId */
+  doctorRecordId?: number;
+  initialData?: Record<string, unknown>;
   isOwnProfile?: boolean;
 };
 
@@ -125,6 +129,7 @@ function applyFetchResult(result: DoctorProfessionalFetchResult) {
 export default function DoctorProfileForm({
   mandatory = false,
   onComplete,
+  doctorRecordId,
   initialData,
   isOwnProfile: externalIsOwnProfile,
 }: DoctorProfileFormProps = {}) {
@@ -149,24 +154,31 @@ export default function DoctorProfileForm({
     : true; // If no initialData, we're viewing the logged-in user's own profile.
 
   useEffect(() => {
-    // If initialData is provided, use it directly and skip fetch
-    if (initialData) {
-      const values = doctorDataToForm(initialData);
-      setForm(values);
-      setSnapshot(values);
-      setAverageRating(readAverageRating(initialData));
-      setHasRecord(true);
-      setEditing(false);
-      setLoading(false);
-      return;
-    }
-
-    // Otherwise, fetch the logged-in doctor's data
     let cancelled = false;
 
     async function loadData() {
       try {
-        const result = await fetchDoctorProfessionalDetails();
+        const token = getAccessToken() ?? undefined;
+        let result: DoctorProfessionalFetchResult;
+
+        if (externalIsOwnProfile !== false) {
+          result = await fetchDoctorProfessionalDetails(token);
+        } else if (doctorRecordId) {
+          result = await fetchDoctorProfessionalDetailsById(doctorRecordId, token);
+        } else if (initialData) {
+          const values = doctorDataToForm(initialData as Parameters<typeof doctorDataToForm>[0]);
+          if (!cancelled) {
+            setForm(values);
+            setSnapshot(values);
+            setAverageRating(readAverageRating(initialData));
+            setHasRecord(true);
+            setEditing(false);
+            setLoading(false);
+          }
+          return;
+        } else {
+          result = { ok: true, data: null };
+        }
 
         if (cancelled) return;
 
@@ -193,7 +205,31 @@ export default function DoctorProfileForm({
     return () => {
       cancelled = true;
     };
-  }, [initialData]);
+  }, [doctorRecordId, initialData, externalIsOwnProfile]);
+
+  async function refreshProfessionalDetails() {
+    const token = getAccessToken() ?? undefined;
+    const result =
+      isOwnProfile
+        ? await fetchDoctorProfessionalDetails(token)
+        : doctorRecordId
+          ? await fetchDoctorProfessionalDetailsById(doctorRecordId, token)
+          : null;
+
+    if (!result) return;
+
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+
+    const next = applyFetchResult(result);
+    setForm(next.form);
+    setSnapshot(next.snapshot);
+    setAverageRating(next.averageRating);
+    setHasRecord(next.hasRecord);
+    setError(next.error);
+  }
 
   function updateField(
     field: keyof typeof emptyDoctorProfessionalForm,
@@ -254,6 +290,10 @@ export default function DoctorProfileForm({
 
       setHasRecord(true);
       setSnapshot(form);
+
+      if (isOwnProfile || doctorRecordId) {
+        await refreshProfessionalDetails();
+      }
 
       if (wasNewRecord) {
         if (onComplete) {
@@ -479,7 +519,11 @@ export default function DoctorProfileForm({
       }
       action={
         showEditButton ? (
-          <ProfileEditButton onClick={() => setEditing(true)} />
+          <ProfileEditButton
+            onClick={() => {
+              void refreshProfessionalDetails().then(() => setEditing(true));
+            }}
+          />
         ) : null
       }
     >

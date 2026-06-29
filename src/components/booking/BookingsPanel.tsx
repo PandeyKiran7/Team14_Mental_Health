@@ -208,7 +208,7 @@ export default function BookingsPanel({ userRole }: BookingsPanelProps) {
 
   // ─── Render ────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-slate-50">
+    <div className="bg-slate-50">
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>

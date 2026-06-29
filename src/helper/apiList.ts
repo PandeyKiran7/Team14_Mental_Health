@@ -19,15 +19,17 @@ export const API_ENDPOINTS = {
 
   // DoctorDetailsManagement
   doctor_data: "/api/v1/doctor-data",
-  doctor_data_by_id: "/api/v1/doctor-data/:userId",
+  doctor_data_by_id: "/api/v1/doctor-data/:doctorId",
   view_profile: "/api/v1/user-doctor-data/:userId",
   user_medical_data: "/api/v1/user-medical-data/:userId",
+  
 
   // Users Management
   users: "/api/v1/users",
-  user_by_id: "/api/v1/user/:userId",
+  user_by_id: "/api/v1/user/:userId", 
   delete_user: "/api/v1/user/:userId",
   update_user: "/api/v1/update/user",
+  update_profile_image: "/api/v1/update-profile-image",
   user_status: "/api/v1/userStatus/:userId",
   patients: "/api/v1/patients",
   doctors: "/api/v1/doctors",

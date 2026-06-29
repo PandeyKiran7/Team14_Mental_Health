@@ -30,7 +30,6 @@ export type Team14DevConsoleApi = {
 
 function log(label: string, result: unknown) {
   console.group(`[Team14 API] ${label}`);
-  console.log(result);
   console.groupEnd();
   return result;
 }
@@ -39,7 +38,6 @@ export function createDevConsoleApi(): Team14DevConsoleApi {
   return {
     getToken() {
       const token = getAccessToken();
-      console.log("[Team14] accessToken:", token);
       return token;
     },
     urls: {
@@ -94,13 +92,5 @@ export function registerDevConsoleApi() {
   window.team14Api = api;
 
   const token = getAccessToken();
-  if (token) {
-    console.log("[Team14] accessToken:", token);
-  }
 
-  console.info(
-    "[Team14] Dev API ready. Try: team14Api.getToken() or await team14Api.getAllDoctors()",
-    "\nURLs:",
-    api.urls,
-  );
 }

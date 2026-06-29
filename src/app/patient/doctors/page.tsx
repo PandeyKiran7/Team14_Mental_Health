@@ -103,7 +103,7 @@ export default function DoctorsPage() {
           onClose={() => setIsModalOpen(false)}
           doctorId={selectedDoctorId}
           onSuccess={() => {
-            console.log('Booking successful!');
+            // console.log('Booking successful!');
           }}
         />
       )}

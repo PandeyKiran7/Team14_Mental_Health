@@ -7,6 +7,7 @@ import PatientMedicalSetupModal from "@/components/patient/PatientMedicalSetupMo
 import ApiMessage from "@/components/ui/ApiMessage";
 import { getAccessToken, getStoredUser } from "@/lib/auth";
 import { getPatientProfileStatus } from "@/lib/patientProfile";
+import { getDashboardPath } from "@/lib/profileRoutes";
 import { handleSessionExpired, redirectIfSessionInvalid } from "@/lib/session";
 
 const PAGE_META: Record<string, { title?: string; subtitle?: string }> = {
@@ -43,7 +44,7 @@ export default function PatientLayoutClient({
       }
 
       if (user.role?.toUpperCase() !== "PATIENT") {
-        router.replace("/");
+        router.replace(getDashboardPath(user.role));
         return;
       }
 
@@ -81,6 +82,9 @@ export default function PatientLayoutClient({
     subtitle: "Diabetes Management System",
   };
 
+  const isProfileRoute =
+    pathname === "/patient/profile" || pathname === "/patient/medical-profile";
+
   if (!ready) {
     return (
       <DashboardShell
@@ -104,7 +108,7 @@ export default function PatientLayoutClient({
       )}
       {children}
       <PatientMedicalSetupModal
-        open={!profileComplete}
+        open={!profileComplete && !isProfileRoute}
         onComplete={() => setProfileComplete(true)}
       />
     </DashboardShell>

@@ -42,7 +42,7 @@ export default function BookAppointmentForm({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [doctors, setDoctors] = useState<BookableDoctor[]>([]);
-  const [showSuccessModal, setShowSuccessModal] = useState(false); // ✅ सफलता मोडलको लागि
+  const [showSuccessModal, setShowSuccessModal] = useState(false); 
 
   const selectedDoctor = useMemo(
     () => doctors.find((doctor) => String(doctor.userId) === doctorUserId),
@@ -72,7 +72,6 @@ export default function BookAppointmentForm({
     void loadDoctors();
   }, []);
 
-  // ✅ initialDoctorId आएमा त्यसलाई चयन गर्ने
   useEffect(() => {
     if (initialDoctorId && doctors.length > 0) {
       const found = doctors.find((d) => d.userId === initialDoctorId);
@@ -120,7 +119,7 @@ export default function BookAppointmentForm({
     }
 
     try {
-      const pathDoctorId = selectedDoctor.bookingDoctorId; // अब userId नै हो
+      const pathDoctorId = selectedDoctor.bookingDoctorId; 
       const payload = {
         bookingDate,
         startTime: startTime.slice(0, 5),
@@ -149,9 +148,7 @@ export default function BookAppointmentForm({
         return;
       }
 
-      // ✅ सफल भएपछि मेसेज सेट गर्नुको सट्टा सफलता मोडल देखाउने
       setShowSuccessModal(true);
-      // onBooked लाई पछि मात्र कल गर्ने (modal बन्द गरेपछि)
     } catch (submitError) {
       setError(getNetworkErrorMessage(submitError));
     } finally {
