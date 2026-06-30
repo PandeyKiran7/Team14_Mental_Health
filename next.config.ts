@@ -25,11 +25,10 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // ADD THIS: Allow images from your backend
   images: {
     remotePatterns: [
       {
-        protocol: new URL(backendUrl).protocol.slice(0, -1), // "http" or "https"
+        protocol: new URL(backendUrl).protocol.slice(0, -1) as "http" | "https",
         hostname: backendHost,
         port: backendPort,
         pathname: "/public/**",

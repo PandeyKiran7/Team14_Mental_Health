@@ -36,7 +36,7 @@ export async function loadBookableDoctors(
       userId: user.userId,
       bookingDoctorId: user.userId, 
       name: `Dr. ${user.firstName} ${user.lastName}`.trim(),
-      specialization: user.specialization || undefined,
+      specialization: undefined,
     }));
 
     doctors.sort((a, b) => a.name.localeCompare(b.name));
